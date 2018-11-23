@@ -134,6 +134,36 @@ compute_M_all = matlabFunction(M);
 compute_B_all = matlabFunction(B);
 compute_a_all = matlabFunction(a);
 
+%% Differential Flatness
+
+x_dd_des = sym('x_dd_des',[3 1]);
+x_ddd_des = sym('x_ddd_des',[3 1]);
+x_dddd_des = sym('x_dddd_des',[3 1]);
+
+thrust = (mg+mq)*e3.'*x_dd_des + g/(e3.'*(1/(mg+mq)*Rq*e3));
+thrust_d = (Rq*e3).'*(mg+mq)*x_ddd_des;
+thrust_dd = (Rq*e3).'*(mg+mq)*x_dddd_des - thrust*e3.'*hat(Om)^2*e3;
+
+% Om_d = sym('Om_d_des',[3 1]);
+dynamics_thrust_constraint = ...
+    -(mg+mq)*x_dddd_des + ...
+    thrust*(Rq*hat(Om_d)*e3+Rq*hat(Om)*hat(Om)*e3) + ...
+    thrust_d*Rq*hat(Om)*e3 + ...
+    thrust_dd*Rq*e3; % == 0
+
+% F * Om_d_des - g = 0
+
+thrust_vectoring_constraints = [
+    kinematic_constraint_exp;
+    dynamics_thrust_constraint
+];
+
+F = simplify(jacobian(thrust_vectoring_constraints,Om_d));
+d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
+
+compute_F_all = matlabFunction(F);
+compute_d_all = matlabFunction(d);
+
 %% Parameter Substitution
 
 % Quad Inertia
@@ -143,11 +173,11 @@ Jqz_ = .010; % [kg*m^2]
 
 % Gripper Inertia
 Jgx_ = .001; % [kg*m^2]
-Jgy_ = .002; % [kg*m^2]
-Jgz_ = .002; % [kg*m^2]
+Jgy_ = .007; % [kg*m^2]
+Jgz_ = .007; % [kg*m^2]
 
 mq_ = .5;  % [kg] quad mass
-mg_ = .25; % [kg] gripper mass
+mg_ = .35; % [kg] gripper mass
 Lg_ = 1;  % [m] distance from center of actuation to gripper COM
 
 g_ = 9.81; % [m/s^2] acceleration due to gravity
@@ -156,6 +186,13 @@ g_ = 9.81; % [m/s^2] acceleration due to gravity
 compute_M_state = @(Rg,Rq) compute_M_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
 compute_B_state = @(Rg,Rq) compute_B_all(Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
 compute_a_state = @(Rg,Rq,Om,w) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_,w(1),w(2),w(3));
+compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(3));
+compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
+
+
+% @(Om1,Om2,Om3,Rq1_1,Rq1_2,Rq1_3,Rq2_1,Rq2_2,Rq2_3,Rq3_1,Rq3_2,Rq3_3,g,mg,mq,x_dd_des3,x_ddd_des1,x_ddd_des2,x_ddd_des3,x_dddd_des1,x_dddd_des2,x_dddd_des3)
+
+% compute_thrust_constraint_state = @(Rq,Om,Om_d_des,x_dd_des,x_ddd_des,x_dddd_des) compute_thrust_constraint_all(Om(1),Om(2),Om(3),Om_d_des(1),Om_d_des(2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3))
 
 %% ode45 interface
 

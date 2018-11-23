@@ -13,6 +13,8 @@ us = zeros(n,6);
 [xs, Rq, Rg, xs_d, Om, w] = state_from_vector(x0);
 %% Dynamic Simulation
 
+u_ff = zeros(6,1); % TODO : eliminate
+
 for j=1:n
     
     % compute feedforward control

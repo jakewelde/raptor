@@ -10,7 +10,7 @@ ws = zeros(n,3);
 constraint_check = zeros(n,1);
 energy = zeros(n,1);
 input_energy = zeros(n,1);
-energy_in = 0;
+power_in = 0;
 
 Jq_ = diag([Jqx_ Jqy_ Jqz_]); % quad inertia
 Jg_ = diag([Jgx_ Jgy_ Jgz_]); % gripper inertia
@@ -24,58 +24,69 @@ for i=1:n
     Oms(i,:) = .2*Rq*Om;
     ws(i,:) = .2*Rg*w;
     constraint_check(i,:) = (Rg*e2).'*(Rq*e1);
-    energy_in = energy_in + (xs_d * segment_dt).'*(us(i,1) * Rq*e3);
+    power_in = (...
+        us(i,1) * xs_d.'*Rq*e3 + ...     % f * v
+        us(i,2) * Om.'*e1+...            % M1 * Om1
+        us(i,3) * Om.'*e2+...            % M2 * Om2 
+        us(i,4) * Om.'*e3+...            % M3 * Om3
+        us(i,5) * (Rg*w).'*(Rq*e1)+...   % T1 * component of w in b1 direction
+        us(i,6) * w.'*e2 + ...           % T2 * w2
+        -us(i,5) * Om.'*e1+...           % T1 * Om1
+        -us(i,6) * (Rq*Om).'*(Rg*e2)...  % T2 * component of Om in g2 direction
+    );
+    % TODO : NEED TO *FIX* TORQUE CONTRIBUTIONS TO ENERGY 
+    input_energy(i+1) = input_energy(i) + segment_dt*power_in;
     translational_energy = (mq_+mg_)*xs(3)*g_ + 1/2*(mq_+mg_)*xs_d.'*xs_d;
     rotational_energy = 1/2*(Om.'*Jq_*Om + w.'*Jg_*w);
-    energy(i) =  rotational_energy + translational_energy - energy_in;
+    energy(i) =  rotational_energy + translational_energy - input_energy(i);
 end
 
 %% Plot trajectories
-% 
-% figure(1);
-% subplot(5,2,1);
-% plot(ts,state(:,1),ts,state(:,2),ts,state(:,3));
-% title('system center of mass position');
-% legend('x','y','z');
-% ylabel('position [m]')
-% subplot(5,2,3);
-% plot(ts,state(:,22),ts,state(:,23),ts,state(:,24));
-% title('system center of mass velocity');
-% legend('x','y','z');
-% ylabel('velocity [m]')
-% subplot(5,2,5);
-% plot(ts,constraint_check);
-% title('f(x) = 0');
-% legend('rotation');
-% ylabel('constraint')
-% subplot(5,2,7);
-% plot(ts,state(:,25),ts,state(:,26),ts,state(:,27));
-% title('quad angular velocity');
-% legend('Om1','Om2','Om3');
-% ylabel('velocity [1/s]')
-% subplot(5,2,9);
-% plot(ts,state(:,28),ts,state(:,29),ts,state(:,30));
-% title('gripper angular velocity');
-% legend('w1','w2','w3');
-% ylabel('velocity [1/s]')
-% 
-% subplot(5,2,10);
-% plot(ts,energy);
-% title('energy');
-% ylabel('energy [J]')
-% 
-% subplot(5,2,8);
-% plot(ts,us);
-% title('control efforts');
-% legend('f','M1','M2','M3','T1','T2');
-% 
+
+figure(1);
+subplot(5,2,1);
+plot(ts,state(:,1),ts,state(:,2),ts,state(:,3));
+title('system center of mass position');
+legend('x','y','z');
+ylabel('position [m]')
+subplot(5,2,3);
+plot(ts,state(:,22),ts,state(:,23),ts,state(:,24));
+title('system center of mass velocity');
+legend('x','y','z');
+ylabel('velocity [m]')
+subplot(5,2,5);
+plot(ts,constraint_check);
+title('f(x) = 0');
+legend('rotation');
+ylabel('constraint')
+subplot(5,2,7);
+plot(ts,state(:,25),ts,state(:,26),ts,state(:,27));
+title('quad angular velocity');
+legend('Om1','Om2','Om3');
+ylabel('velocity [1/s]')
+subplot(5,2,9);
+plot(ts,state(:,28),ts,state(:,29),ts,state(:,30));
+title('gripper angular velocity');
+legend('w1','w2','w3');
+ylabel('velocity [1/s]')
+
+subplot(5,2,10);
+plot(ts,energy);
+title('energy');
+ylabel('energy [J]')
+
+subplot(5,2,8);
+plot(ts,us);
+title('control efforts');
+legend('f','M1','M2','M3','T1','T2');
+
 
 
 %% Visualize Robot
-
-% subplot(5,2,[2 4 6]);
+% state(:,4:21) = state(:,4:21);
+subplot(5,2,[2 4 6]);
 range = 1:20:n;
-% for range=1:5:n
+% for range=1:50:n
     cla;
     hold on;
     view([160 40])
