@@ -1,5 +1,10 @@
 % compute the nominal control inputs based on a trajectory
 
+% TODO :
+% - polynomial trajectory planner (matrix inversion for starters)
+% - euler angles to rotation matrix trajectory
+% - TVLQR
+
 %% Numerical Dynamics
 
 % Compute numerical function that represents the evolution of the system's

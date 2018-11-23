@@ -34,9 +34,9 @@ for j=1:n
     % record state and control inputs for plotting
     state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w);
     us(j,:) = u_ff.';
-    
+    tic
     compute_ff;
-
+    toc
  
 end
 
