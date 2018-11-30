@@ -11,6 +11,25 @@ current_state = x0;
 
 us = zeros(n,6);
 [xs, Rq, Rg, xs_d, Om, w] = state_from_vector(x0);
+
+%% Plan trajectory
+
+planning_matrix;
+
+init_state = [0;3;0;0];
+final_state = [4;5;0;0];
+
+C = D*[init_state;final_state];
+
+% figure(3);
+
+% derivatives = zeros(5,n);
+% for j=1:n
+%    derivatives(:,j) = compute_derivatives(C,j*segment_dt);
+% end
+
+% plot((1:n)*segment_dt,derivatives)
+
 %% Dynamic Simulation
 
 u_ff = zeros(6,1); % TODO : eliminate
@@ -34,9 +53,9 @@ for j=1:n
     % record state and control inputs for plotting
     state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w);
     us(j,:) = u_ff.';
-    tic
+
     compute_ff;
-    toc
+%     u_ff = zeros(6,1);
  
 end
 

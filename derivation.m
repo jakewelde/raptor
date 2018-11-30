@@ -40,11 +40,12 @@ syms T2 % torque at joint 2 - closer to gripper body, rotates around g2 (which i
 u = [f; M1; M2; M3; T1; T2];
 
 %% Operators
-
+global hat
 hat = @(v) [0 -v(3) v(2); v(3) 0 -v(1); -v(2) v(1) 0];
 
 %% Unit Vectors
 
+global e1 e2 e3
 e1 = [1; 0; 0];
 e2 = [0; 1; 0];
 e3 = [0; 0; 1];
@@ -166,6 +167,8 @@ compute_d_all = matlabFunction(d);
 
 %% Parameter Substitution
 
+global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  mq_ mg_ Lg_ Le_ g_
+
 % Quad Inertia
 Jqx_ = .005; % [kg*m^2]
 Jqy_ = .005; % [kg*m^2]
@@ -178,7 +181,8 @@ Jgz_ = .007; % [kg*m^2]
 
 mq_ = .5;  % [kg] quad mass
 mg_ = .35; % [kg] gripper mass
-Lg_ = 1;  % [m] distance from center of actuation to gripper COM
+Lg_ = .5;  % [m] distance from center of actuation to gripper COM
+Le_ = .6;  % [m] distance from center of actuation to end effector
 
 g_ = 9.81; % [m/s^2] acceleration due to gravity
 
@@ -207,7 +211,7 @@ ode = @(x,u) [
   compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)))
 ];
 
-% d/dt [Om_d w_d] = inv(M)*(B u + a)
+% M(x) [Om_d w_d] = (B(x) u + a(x))
 
 % x = [
 %   x_s
@@ -226,3 +230,4 @@ ode = @(x,u) [
 %   T_2
 % ]
 
+%% Differential Flatness
