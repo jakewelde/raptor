@@ -2,7 +2,7 @@
 set_initial_conditions;
 
 %% Configure simulation parameters
-segment_dt = .001;
+segment_dt = .0001;
 total_dt = 1;
 n = floor(total_dt/segment_dt);
 state = zeros(n,size(x0,1));
@@ -34,19 +34,21 @@ for j=1:n
    derivatives(:,j) = compute_derivatives(C,j*segment_dt);
 end
 
-% plot((1:n)*segment_dt,derivatives(1,:));
 
+plot((1:n)*segment_dt,derivatives(1,:));
 
-init_angle = [pi/2;0;0;0];
+shg;
+
+init_angle = [pi/4;0;0;0];
+% final_angle = [pi/2;0;0;0];
 final_angle = [7*pi/8;0;0;0];
 C_R = D*[init_angle;final_angle];
 
-% init_wrist = [0;0;0;0];
-% final_wrist = [pi/2;0;0;0];
-% C_W = D*[init_wrist;final_wrist];
+init_wrist = [0;0;0;0];
+final_wrist = [pi/2;0;0;0];
+C_W = D*[init_wrist;final_wrist];
 
-Rg_des = axisangle(e2,basis*C_R);
-% *axisangle(e1,basis*C_W);
+Rg_des = axisangle(e2,basis*C_R) *axisangle(e1,basis*C_W);
 
 w_des = unhat(Rg_des.' * diff(Rg_des,time));
 w_d_des = diff(w_des,time);

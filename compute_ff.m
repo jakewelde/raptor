@@ -45,6 +45,12 @@ xe_dddd_des = [flat_state(5);0;0]; % COM snap (4th derivative)
 % xe_ddd_des  = [0;flat_state(4);0]; % COM jerk (3rd derivative)
 % xe_dddd_des = [0;flat_state(5);0]; % COM snap (4th derivative)
 
+% xe_des      = [0;0;flat_state(1)];
+% xe_d_des    = [0;0;flat_state(2)];
+% xe_dd_des   = [0;0;flat_state(3)]; % COM acceleration (2nd derivative)
+% xe_ddd_des  = [0;0;flat_state(4)]; % COM jerk (3rd derivative)
+% xe_dddd_des = [0;0;flat_state(5)]; % COM snap (4th derivative)
+
 
 % xs_dd_des = xe_dd_des-Ls_*Rg_des*(hat(w_d_des)+hat(w_des)^2)*e1;
 % % xs_dd_rec(:,j) = xs_dd_des;
@@ -114,15 +120,15 @@ xs_rec(13:15,j) = xs_dddd_des;
 % flatness, not the current 
 
 M = [
- (mg_+mq_)   zeros(1,6);
+  (mg_+mq_)   zeros(1,6);
   zeros(6,1) compute_M_state(Rg,Rq);
 ];
 B = [
-    e3.'*(1/(mg_+mq_)*Rq*e3) zeros(1,5);
+    e3.'*(Rq*e3) zeros(1,5);
     compute_B_state(Rg,Rq);
 ];
 a = [
-    -g_;
+    -(mg_+mq_)*g_;
     compute_a_state(Rg,Rq,Om,w);
 ];
  %% 
@@ -134,9 +140,6 @@ H = [F d];
 [U,S,V] = svd(H);
 
 if(S(end) ~= 0)
-%     disp('Warning: encountered inconsistent system in feedback linearization. Using previous control input.');
-%     disp('Singular Value Ratio:')
-%     disp(singular_vals(1) / singular_vals(end));
     S(end) = 0;
     H = U*S*V.';
 end
@@ -161,6 +164,7 @@ G = [B (M*acc_des - a)];
 [U,S,V] = svd(G);
 
 if(S(end) ~= 0)
+%     disp(S(1) / S(end));
     S(end) = 0;
     G = U*S*V.';
 end

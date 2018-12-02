@@ -180,16 +180,17 @@ x_dd_des = sym('x_dd_des',[3 1]);
 x_ddd_des = sym('x_ddd_des',[3 1]);
 x_dddd_des = sym('x_dddd_des',[3 1]);
 
-thrust = (mg+mq)*e3.'*x_dd_des + g/(e3.'*(1/(mg+mq)*Rq*e3));
-thrust_d = (Rq*e3).'*(mg+mq)*x_ddd_des;
-thrust_dd = (Rq*e3).'*(mg+mq)*x_dddd_des - thrust*e3.'*hat(Om)^2*e3;
+thrust    = (Rq*e3).' * (mg+mq) * (x_dd_des + g*e3);
+thrust_d  = (Rq*e3).' * (mg+mq) * x_ddd_des;
+% thrust_dd = (Rq*e3).' * (mg+mq) * x_dddd_des - thrust*e3.'*hat(Om)^2*e3;
+thrust_dd = (Rq*e3).' * (mg+mq) * x_dddd_des - thrust*e3.'*(hat(Om_d) + hat(Om)^2)*e3;
 
 % Om_d = sym('Om_d_des',[3 1]);
 dynamics_thrust_constraint = ...
-    -(mg+mq)*x_dddd_des + ...
-    thrust*(Rq*hat(Om_d)*e3+Rq*hat(Om)*hat(Om)*e3) + ...
-    thrust_d*Rq*hat(Om)*e3 + ...
-    thrust_dd*Rq*e3; % == 0
+      -(mg+mq)* x_dddd_des + ...
+       thrust * Rq * ( hat(Om_d) + hat(Om)^2 ) * e3 + ...
+     thrust_d * 2*Rq * hat(Om) * e3  + ...
+    thrust_dd * Rq * e3; % == 0
 
 % F * Om_d_des - g = 0
 
@@ -209,21 +210,21 @@ compute_d_all = matlabFunction(d);
 global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  mq_ mg_ Lg_ Le_ g_ Ls_
 
 % Quad Inertia
-Jqx_ = .005; % [kg*m^2]
-Jqy_ = .005; % [kg*m^2]
-Jqz_ = .010; % [kg*m^2]
+Jqx_ = .001; % [kg*m^2]
+Jqy_ = .001; % [kg*m^2]
+Jqz_ = .001; % [kg*m^2]
 
 % Gripper Inertia
 Jgx_ = .001; % [kg*m^2]
-Jgy_ = .012; % [kg*m^2]
-Jgz_ = .012; % [kg*m^2]
+Jgy_ = .001; % [kg*m^2]
+Jgz_ = .001; % [kg*m^2]
 
 mq_ = .5;  % [kg] quad mass
-mg_ = .35; % [kg] gripper mass
+mg_ = .5; % [kg] gripper mass
 Lg_ = .5;  % [m] distance from center of actuation to gripper COM
 Le_ = .6;  % [m] distance from center of actuation to end effector
 
-g_ = 9.81; % [m/s^2] acceleration due to gravity
+g_ = 10; % [m/s^2] acceleration due to gravity
 
 Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 
@@ -239,8 +240,8 @@ compute_B_state = @(Rg,Rq) compute_B_all(Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(
 compute_a_state = @(Rg,Rq,Om,w) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_,w(1),w(2),w(3));
 
 % differential flatness
-compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(3));
-compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
+compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(1),x_dd_des(2),x_dd_des(3));
+compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
 
 %% ode45 Interface
 
@@ -262,11 +263,4 @@ ode = @(x,u) [
   compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)))
 ];
 
-% x = [
-%   x_s
-%   Rq
-%   Rg
-%   xs_d
-%   Om
-%   w
-% ]
+% x = [x_s; Rq; Rg; xs_d; Om; w]

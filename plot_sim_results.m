@@ -62,8 +62,27 @@ end
 
 %% Plot trajectories
 
+
+accel = zeros(1,n);
+b3 = zeros(3,n);
+for i=1:n
+    R = reshape(state(i,4:12),[3 3]);
+    b3(:,i) = R(:,3);
+    accel(i) = e1.'*(us(i,1)*R*e3/(mg_+mq_));
+end
+
+integrated_velocity = cumsum(us(:,3)-us(:,6))*segment_dt / Jqx_;
+integrated_angle = cumsum(integrated_velocity)*segment_dt;
+
+figure(7);
+clf;
+hold on;
+plot(ts,b3(1,:),ts,us(:,3)-us(:,6),ts,sin(integrated_angle))
+plot([0 1],[0 0],'k')
+legend('b3 x direction','net moment on quad','angle by integrated velocity')
+hold off;
+
 figure(2);
-shg;
 
 if(show_profile_plots)
     subplot(4,2,1);
@@ -71,6 +90,7 @@ if(show_profile_plots)
     hold on;
     plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
     plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
+%     plot(ts,cumsum(segment_dt*cumsum(segment_dt*(us(:,1)/(mg_+mq_)-g_))),'k')
     hold off;
     title('system center of mass position');
     legend('x','y','z');
@@ -80,6 +100,7 @@ if(show_profile_plots)
     hold on;
     plot(ts,state(:,22),'r',ts,state(:,23),'g',ts,state(:,24),'b');
     plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
+%     plot(ts,cumsum(segment_dt*(us(:,1)/(mg_+mq_)-g_)),'k')
     hold off;
     title('system center of mass velocity');
     legend('x','y','z');
@@ -120,6 +141,8 @@ if(show_profile_plots)
     
 end
 
+shg;
+drawnow;
 
 
 %% Visualize Robot
@@ -130,7 +153,7 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 50;
+step = 100;
 for range=[1:step:n n]
     [az,el]=view;
     cla;
@@ -145,19 +168,6 @@ for range=[1:step:n n]
     plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'.')
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'.')
     plot3(xq_rec(1,:),xq_rec(2,:),xq_rec(3,:),'.')
-
-%     quiver3(xq(range,1),xq(range,2),xq(range,3),state(range,4),state(range,5),state(range,6),'AutoScale','off','color',[1 0 0]);
-%     quiver3(xq(range,1),xq(range,2),xq(range,3),state(range,7),state(range,8),state(range,9),'AutoScale','off','color',[0 1 0]);
-%     quiver3(xq(range,1),xq(range,2),xq(range,3),state(range,10),state(range,11),state(range,12),'AutoScale','off','color',[0 0 1]);
-% 
-%     quiver3(xg(range,1),xg(range,2),xg(range,3),state(range,13),state(range,14),state(range,15),'AutoScale','off','color',[1 0 0]);
-%     quiver3(xg(range,1),xg(range,2),xg(range,3),state(range,16),state(range,17),state(range,18),'AutoScale','off','color',[0 1 0]);
-%     quiver3(xg(range,1),xg(range,2),xg(range,3),state(range,19),state(range,20),state(range,21),'AutoScale','off','color',[0 0 1]);
-
-%     quiver3(xq(range,1),xq(range,2),xq(range,3),Oms(range,1),Oms(range,2),Oms(range,3),'AutoScale','off','color',[1 0 1]);
-%     quiver3(xg(range,1),xg(range,2),xg(range,3),ws(range,1),ws(range,2),ws(range,3),'AutoScale','off','color',[0 1 1]);
-
-%     plot3(state(range,1),state(range,2),state(range,3),'x');
 
     draw_robot(state(range,:));
     axis equal    
