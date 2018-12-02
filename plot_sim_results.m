@@ -4,18 +4,18 @@ ts = segment_dt*(1:n);
 
 show_profile_plots = true;
 
-
-figure(5);
-clf;
-plot(...
-    ts,xs_rec(1,:),...
-    ts,xs_rec(4,:),...
-    ts,xs_rec(7,:),...
-    ts,xs_rec(10,:),...
-    ts,xs_rec(13,:)...
-)
-legend('position','velocity','acceleration','jerk','snap');
-
+% 
+% figure(5);
+% clf;
+% plot(...
+%     ts,xs_rec(1,:),...
+%     ts,xs_rec(4,:),...
+%     ts,xs_rec(7,:),...
+%     ts,xs_rec(10,:),...
+%     ts,xs_rec(13,:)...
+% )
+% legend('position','velocity','acceleration','jerk','snap');
+% 
 
 
 xg = zeros(n,3);
@@ -153,7 +153,7 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 100;
+step = 500;
 for range=[1:step:n n]
     [az,el]=view;
     cla;

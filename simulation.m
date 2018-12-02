@@ -39,16 +39,17 @@ plot((1:n)*segment_dt,derivatives(1,:));
 
 shg;
 
-init_angle = [pi/4;0;0;0];
+init_angle = [pi/2;0;0;0];
 % final_angle = [pi/2;0;0;0];
 final_angle = [7*pi/8;0;0;0];
 C_R = D*[init_angle;final_angle];
 
-init_wrist = [0;0;0;0];
-final_wrist = [pi/2;0;0;0];
-C_W = D*[init_wrist;final_wrist];
+% init_wrist = [0;0;0;0];
+% final_wrist = [pi/2;0;0;0];
+% C_W = D*[init_wrist;final_wrist];
 
-Rg_des = axisangle(e2,basis*C_R) *axisangle(e1,basis*C_W);
+Rg_des = axisangle(e2,basis*C_R);
+%  *axisangle(e1,basis*C_W);
 
 w_des = unhat(Rg_des.' * diff(Rg_des,time));
 w_d_des = diff(w_des,time);
