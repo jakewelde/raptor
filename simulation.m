@@ -22,7 +22,7 @@ planning_matrix;
 % final_state = [4;5;0;0];
 
 init_state = [0;0;0;0];
-final_state = [-.5;0;0;0];
+final_state = [.5;0;0;0];
 
 
 C = D*[init_state;final_state];
@@ -41,9 +41,9 @@ init_angle = [pi/2;0;0;0];
 final_angle = [7*pi/8;0;0;0];
 C_R = D*[init_angle;final_angle];
 
-init_wrist = [0;0;0;0];
-final_wrist = [pi/2;0;0;0];
-C_W = D*[init_wrist;final_wrist];
+% init_wrist = [0;0;0;0];
+% final_wrist = [pi/2;0;0;0];
+% C_W = D*[init_wrist;final_wrist];
 
 Rg_des = axisangle(e2,basis*C_R);
 % *axisangle(e1,basis*C_W);
@@ -107,7 +107,7 @@ for j=1:n
 
     % integrate dynamics 
     tspan=segment_dt*(j-1)+[0 segment_dt];
-    [~,qs] = ode45(@(t,x) ode(x,u_ff),tspan,current_state);   
+    [~,qs] = ode113(@(t,x) ode(x,u_ff),tspan,current_state);   
     current_state = qs(end,:)';
     
     % reorthonormalize rotation matrices (project back onto manifold)

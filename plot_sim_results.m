@@ -53,7 +53,7 @@ for i=1:n
         -us(i,5) * Om.'*e1+...           % T1 * Om1
         -us(i,6) * (Rq*Om).'*(Rg*e2)...  % T2 * component of Om in g2 direction
     );
-    % TODO : NEED TO *FIX* TORQUE CONTRIBUTIONS TO ENERGY 
+
     input_energy(i+1) = input_energy(i) + segment_dt*power_in;
     translational_energy = (mq_+mg_)*xs(3)*g_ + 1/2*(mq_+mg_)*xs_d.'*xs_d;
     rotational_energy = 1/2*(Om.'*Jq_*Om + w.'*Jg_*w);
@@ -67,12 +67,20 @@ shg;
 
 if(show_profile_plots)
     subplot(4,2,1);
-    plot(ts,state(:,1),ts,state(:,2),ts,state(:,3));
+    cla;
+    hold on;
+    plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
+    plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
+    hold off;
     title('system center of mass position');
     legend('x','y','z');
     ylabel('position [m]')
     subplot(4,2,3);
-    plot(ts,state(:,22),ts,state(:,23),ts,state(:,24));
+    cla;
+    hold on;
+    plot(ts,state(:,22),'r',ts,state(:,23),'g',ts,state(:,24),'b');
+    plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
+    hold off;
     title('system center of mass velocity');
     legend('x','y','z');
     ylabel('velocity [m]')

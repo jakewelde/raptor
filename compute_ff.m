@@ -5,27 +5,6 @@
 % - euler angles to rotation matrix trajectory
 % - TVLQR
 
-%% Numerical Dynamics
-
-% Compute numerical function that represents the evolution of the system's
-% state at the current point in state space, but is still a function of the
-% inputs of the system
-
-% M x'' = B u + a(x)
-
-M = [
- (mg_+mq_)   zeros(1,6);
-  zeros(6,1) compute_M_state(Rg,Rq);
-];
-B = [
-    e3.'*(1/(mg_+mq_)*Rq*e3) zeros(1,5);
-    compute_B_state(Rg,Rq);
-];
-a = [
-    -g_;
-    compute_a_state(Rg,Rq,Om,w);
-];
-
 %% Differential Flatness
 
 % using a minimal representation of the trajectory in a flat-ish space, we
@@ -115,7 +94,38 @@ xs_rec(7:9,j) = xs_dd_des;
 xs_rec(10:12,j) = xs_ddd_des;
 xs_rec(13:15,j) = xs_dddd_des;
 
-%% 
+% 
+% 
+% b3 = (xs_dd_des+g_*e3) / norm(xs_dd_des+g_*e3);
+% g2 = Rg_des(:,2);
+% 
+% b1 = sym('b1',[3 1]);
+% [g2.';b3.';b1.']*b1 == [0;0;1]
+
+%% Numerical Dynamics
+
+% Compute numerical function that represents the evolution of the system's
+% state at the current point in state space, but is still a function of the
+% inputs of the system
+
+% M x'' = B u + a(x)
+
+% TODO : replace all this with the nominal computation from differential
+% flatness, not the current 
+
+M = [
+ (mg_+mq_)   zeros(1,6);
+  zeros(6,1) compute_M_state(Rg,Rq);
+];
+B = [
+    e3.'*(1/(mg_+mq_)*Rq*e3) zeros(1,5);
+    compute_B_state(Rg,Rq);
+];
+a = [
+    -g_;
+    compute_a_state(Rg,Rq,Om,w);
+];
+ %% 
 
 F = compute_F_state(Rg, Rq,xs_dd_des);
 d = compute_d_state(Rg_des,Rq,Om,w_des,w_d_des,xs_dd_des,xs_ddd_des,xs_dddd_des);
@@ -150,11 +160,10 @@ acc_des = [xs_dd_des(3); Om_d_des; w_d_des];
 G = [B (M*acc_des - a)];
 [U,S,V] = svd(G);
 
-% if(REF(end,:) ~= zeros(1,7))
 if(S(end) ~= 0)
     S(end) = 0;
     G = U*S*V.';
 end
 REF = rref(G);
-u_ff = double(REF(1:6,7));
 
+u_ff = double(REF(1:6,7));

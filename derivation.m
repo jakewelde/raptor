@@ -1,3 +1,28 @@
+%% Methodology of Derivation
+
+% Create an equation of the form M(x) [Om_d; w_d] = a(x) + B(x)*u so that
+% we can find [Om_d; w_d].
+%
+% The first three rows of this vector equation will come from the Euler
+% equations for the two bodies. They can each be solved for the moments
+% between them and set equal, giving three equations. 
+%
+% Then, two equations will be found by projecting the moments between the
+% two bodies onto the arm joint axes. This will be equal to the control
+% inputs that are the torques on those axes. To get this equation in terms
+% of Om_d, use the angular dynamics of one of the bodies solved for the
+% moments, as computed above, in the projection.
+% 
+% The final constraint comes from the kinematics of the robot. Becuase
+% there are only two joints between the two bodies, there is a constraint
+% on their relative angular velocity since it can not be any arbitrary
+% direction. In particular, consider the difference between their angular
+% velocities, expressed in a common frame. The projection of this vector
+% onto the direction that is instantaneously perpendicular to both motor
+% axes must be zero, since there is no freedom of movement between the two
+% bodies along that direction. In order to get a constraint on
+% acceleration, differentiate this velocity constraint.
+
 clear;
 
 %% Model Parameters
@@ -27,7 +52,7 @@ xs_d = sym('xs_d',[3 1]); % velocity of center of mass
 Om = sym('Om',[3 1]); % angular velocity of quadrotor body relative to world, expressed in quadrotor frame
 w = sym('w',[3 1]); % angular velocity of gripper relative to world, expressed in gripper frame
 
-% ACCELERATION (not truly part of state)
+% ACCELERATION (not truly part of state but used below)
 xs_dd = sym('xs_dd',[3 1]); % acceleration of center of mass
 Om_d = sym('Om_d',[3 1]); % angular acceleration of quadrotor body relative to world, expressed in quadrotor frame
 w_d = sym('w_d',[3 1]); % angular acceleration of gripper relative to world, expressed in gripper frame
@@ -58,42 +83,40 @@ e3 = [0; 0; 1];
 
 r = -Lg*Rg*e1; % vector from gripper center of mass to center of actuation
 
-xq = sym('xq',[3 1]); % position of quadrotor body center of mass
-xg = sym('xg',[3 1]); % position of gripper center of mass
-
-xs_exp = subs((mg*xg + mq*xq)/(mg+mq),xq,xg+r);
-sol = solve(xs == xs_exp,xg);
-xg = [sol.xg1;sol.xg2;sol.xg3]; % (A)
-
+xg = xs + (Lg*mq)/(mg+mq)*Rg*e1; % gripper position using system enter of mass and gripper orientation
 xs_dd = 1/(mq+mg)*(f*Rq*e3) - g*e3; % sum of external forces on entire system 
 xg_dd = xs_dd + Lg*mq/(mq+mg)*Rg*(hat(w)^2+hat(w_d))*e1; % acceleration kinematics from differentiating (A) above
 
 %% Dynamics
 
-% Mr is reaction moments on the gripper in the gripper frame, at the center of actuation. Includes the effect of input torques on the two joints.
+% Mr is reaction moments on the gripper in the gripper frame, at the center
+% of actuation. Includes the effect of input torques on the two joints as
+% well as torque due to the kinematic constraints.
 
 Fr = mg*xg_dd + mg*g*e3; % solving sum of forces on gripper subsystem for the reaction force on the gripper in the world frame
 
+% Solve angular dynamics of the two bodies for the moments between them
 Mr_quad = Rg.'*Rq*(Mq - cross(Om,Jq*Om) - Jq*Om_d);
 Mr_gripper = Jg*w_d + cross(w,Jg*w)-Rg.'*cross(r,Fr);
 
+% set these moments equal
 combination = Mr_quad - Mr_gripper; % == 0
-acc = [Om_d; w_d];
 
+% massage this equation into the form Ax=b
+acc = [Om_d; w_d];
 top_3_rows = jacobian(combination, acc);
 top_affine_part = -simplify(combination - top_3_rows*acc);
 
 %% Kinematic Constraints
 
-% OLD (INCORRECT) CONSTRAINTS
-% kinematic_constraint_exp = Om_d.'*Rq.'*Rg*e1 + Om.'*(-hat(Om)*Rq.'*Rg+Rq.'*Rg*hat(w))*e1 - e1.'*w_d % == 0
-% kinematic_constraint_exp = e2.'*(-hat(w)*Rg.'*Rq*hat(Om) + Rg.'*Rq.'*(hat(Om_d)+hat(Om)*hat(Om))-hat(w_d)*Rg.'*Rq+hat(w)*hat(w)*Rg.'*Rq-hat(w)*Rg.'*Rq*hat(Om))*e1 % == 0
-
-% NEW CORRECT VELOCITY BASED KINEMATIC CONSTRAINT
+% constraint on accelerations found by differentiating the constraint on
+% angular velocities due to missing degree of freedom between the bodies
 kinematic_constraint_exp = (cross(Rq*e1,Rg*hat(w)*e2)+cross(Rq*hat(Om)*e1,Rg*e2)).'*(Rg*w-Rq*Om)+cross(Rq*e1,Rg*e2).'*( Rg*hat(w)*w - Rq*hat(Om)*Om + Rg*w_d - Rq*Om_d ); % == 0;
 
-torque_constraint_1_exp = (Rg*Mr_gripper).'*Rq*e1 - T1; % == 0
-torque_constraint_2_exp = (Mr_gripper).'*e2 - T2; % == 0
+% torque between bodies projected onto actuator axes equals the torque
+% applied by those actuators
+torque_constraint_1_exp = (Rg*Mr_quad).'*Rq*e1 - T1; % == 0
+torque_constraint_2_exp = (Mr_quad).'*e2 - T2; % == 0
 
 K = [
  kinematic_constraint_exp;
@@ -101,10 +124,18 @@ K = [
  torque_constraint_2_exp;
 ];
 
+% massage this equation into the form Ax=b
 bottom_3_rows = jacobian(K, acc);
 bottom_affine_part = -simplify(expand(K) - expand(bottom_3_rows*acc));
 
 %% Dynamics Solution 
+
+% Combine the results from above into one vector equation that gives six
+% different constraints on the angular accelerations, which should allow us
+% to solve for them.
+
+% M(x) x' = a(x) + B(x) u
+
 M = [
   top_3_rows;
   bottom_3_rows
@@ -116,7 +147,8 @@ affine = [
 B = jacobian(affine,u);
 a = simplify(affine - B*u);
 
-% M(x) x' = a(x) + B(x) u
+% check that the dynamics are actually of the form necessary to use
+% jacobian() etc to massage the equations like we did above
 
 if ~eval(jacobian(M(:),acc) == 0)
    disp('Error : Dynamics are nonlinear in acceleration, cannot solve dynamics');
@@ -134,6 +166,9 @@ else
    disp('Error: a depends on u');
    return;
 end
+
+% turn these symbolic expressions into MATLAB functions that we can
+% use with numeric inputs and outputs instead of symbolics
 
 compute_M_all = matlabFunction(M);
 compute_B_all = matlabFunction(B);
@@ -169,7 +204,7 @@ d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
 compute_F_all = matlabFunction(F);
 compute_d_all = matlabFunction(d);
 
-%% Parameter Substitution
+%% Numerical Physical Parameters
 
 global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  mq_ mg_ Lg_ Le_ g_ Ls_
 
@@ -192,63 +227,46 @@ g_ = 9.81; % [m/s^2] acceleration due to gravity
 
 Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 
-%% ode parameter substitution
+%% Function Parameter Substitution
+
+% Substitute physical parameters of the robot into the functions we are
+% creating to use with numerical inputs and outputs so that we don't have
+% to supply these parameters every time we call the functions.
+
+% dynamics
 compute_M_state = @(Rg,Rq) compute_M_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
 compute_B_state = @(Rg,Rq) compute_B_all(Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
 compute_a_state = @(Rg,Rq,Om,w) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_,w(1),w(2),w(3));
+
+% differential flatness
 compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(3));
 compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
 
+%% ode45 Interface
 
-% @(Om1,Om2,Om3,Rq1_1,Rq1_2,Rq1_3,Rq2_1,Rq2_2,Rq2_3,Rq3_1,Rq3_2,Rq3_3,g,mg,mq,x_dd_des3,x_ddd_des1,x_ddd_des2,x_ddd_des3,x_dddd_des1,x_dddd_des2,x_dddd_des3)
+% Take the functions we've generated above, which deal only with the
+% angular accelerations, and combine them with the translational dynamics
+% and the position-velocity integration relationships to create the full
+% dynamics of the robot as a system of first order ODE's in order to
+% provide to MATLAB ode solver.
 
-% compute_thrust_constraint_state = @(Rq,Om,Om_d_des,x_dd_des,x_ddd_des,x_dddd_des) compute_thrust_constraint_all(Om(1),Om(2),Om(3),Om_d_des(1),Om_d_des(2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3))
-
-%% ode45 interface
-
+% derivative of center of mass position is center of mass velocity
 velocity_cascade = zeros(3,(3+9+9+3+3+3));
 velocity_cascade(1:3,3+9+9+(1:3)) = eye(3);
 
 ode = @(x,u) [
   velocity_cascade*x; % first three rows
-  reshape(sp(x(4:(4+8)),hat(x(25:27))),[9 1]);
-  reshape(sp(x(13:(13+8)),hat(x(28:30))),[9 1]);
-  u(1)/(mg_+mq_)*sp(x(4:(4+8)),e3) - g_*e3;
+  reshape(sp(x(4:(4+8)),hat(x(25:27))),[9 1]); % d/dt Rq = Rq Om_hat
+  reshape(sp(x(13:(13+8)),hat(x(28:30))),[9 1]); % d/dt Rg = Rg w_hat
+  u(1)/(mg_+mq_)*sp(x(4:(4+8)),e3) - g_*e3; % acceleration of system center of mass is due to gravity and thrust
   compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)))
 ];
-
-% M(x) [Om_d w_d] = (B(x) u + a(x))
 
 % x = [
 %   x_s
 %   Rq
 %   Rg
-%   x_s_d
+%   xs_d
 %   Om
 %   w
 % ]
-% u = [
-%   f
-%   M1
-%   M2
-%   M3
-%   T_1
-%   T_2
-% ]
-
-%% Differential Flatness
-% 
-% 
-% %% Kinematics
-% 
-% xs = sym('xq',[3 1]); % position of quadrotor body center of mass
-% xe = sym('xq',[3 1]); % position of quadrotor body center of mass
-% xq = sym('xq',[3 1]); % position of quadrotor body center of mass
-% xg = sym('xg',[3 1]); % position of gripper center of mass
-% 
-% xs_exp = subs((mg*xg + mq*xq)/(mg+mq),xq,xg+r);
-% sol = solve(xs == xs_exp,xg);
-% xg = [sol.xg1;sol.xg2;sol.xg3]; % (A)
-% 
-% xs_dd = 1/(mq+mg)*(f*Rq*e3) - g*e3; % sum of external forces on entire system 
-% xg_dd = xs_dd + Lg*mq/(mq+mg)*Rg*(hat(w)^2+hat(w_d))*e1; % acceleration kinematics from differentiating (A) above
