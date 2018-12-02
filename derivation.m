@@ -9,6 +9,9 @@ Jg = diag([Jgx Jgy Jgz]); % gripper inertia
 syms mq; % quad mass
 syms mg; % gripper mass
 syms Lg; % distance from center of actuation to gripper COM
+syms Le; % distance from center of actuation to end effector
+
+Ls = mq/(mg+mq)*Lg - Le; % distance from end effector to system center of mass
 
 syms g;
 
@@ -40,8 +43,9 @@ syms T2 % torque at joint 2 - closer to gripper body, rotates around g2 (which i
 u = [f; M1; M2; M3; T1; T2];
 
 %% Operators
-global hat
+global hat unhat
 hat = @(v) [0 -v(3) v(2); v(3) 0 -v(1); -v(2) v(1) 0];
+unhat = @(v_hat) [v_hat(3,2); v_hat(1,3); v_hat(2,1)];
 
 %% Unit Vectors
 
@@ -167,7 +171,7 @@ compute_d_all = matlabFunction(d);
 
 %% Parameter Substitution
 
-global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  mq_ mg_ Lg_ Le_ g_
+global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  mq_ mg_ Lg_ Le_ g_ Ls_
 
 % Quad Inertia
 Jqx_ = .005; % [kg*m^2]
@@ -176,8 +180,8 @@ Jqz_ = .010; % [kg*m^2]
 
 % Gripper Inertia
 Jgx_ = .001; % [kg*m^2]
-Jgy_ = .007; % [kg*m^2]
-Jgz_ = .007; % [kg*m^2]
+Jgy_ = .012; % [kg*m^2]
+Jgz_ = .012; % [kg*m^2]
 
 mq_ = .5;  % [kg] quad mass
 mg_ = .35; % [kg] gripper mass
@@ -185,6 +189,8 @@ Lg_ = .5;  % [m] distance from center of actuation to gripper COM
 Le_ = .6;  % [m] distance from center of actuation to end effector
 
 g_ = 9.81; % [m/s^2] acceleration due to gravity
+
+Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 
 %% ode parameter substitution
 compute_M_state = @(Rg,Rq) compute_M_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
@@ -231,3 +237,18 @@ ode = @(x,u) [
 % ]
 
 %% Differential Flatness
+% 
+% 
+% %% Kinematics
+% 
+% xs = sym('xq',[3 1]); % position of quadrotor body center of mass
+% xe = sym('xq',[3 1]); % position of quadrotor body center of mass
+% xq = sym('xq',[3 1]); % position of quadrotor body center of mass
+% xg = sym('xg',[3 1]); % position of gripper center of mass
+% 
+% xs_exp = subs((mg*xg + mq*xq)/(mg+mq),xq,xg+r);
+% sol = solve(xs == xs_exp,xg);
+% xg = [sol.xg1;sol.xg2;sol.xg3]; % (A)
+% 
+% xs_dd = 1/(mq+mg)*(f*Rq*e3) - g*e3; % sum of external forces on entire system 
+% xg_dd = xs_dd + Lg*mq/(mq+mg)*Rg*(hat(w)^2+hat(w_d))*e1; % acceleration kinematics from differentiating (A) above

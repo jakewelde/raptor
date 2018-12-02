@@ -4,6 +4,19 @@ ts = segment_dt*(1:n);
 
 show_profile_plots = true;
 
+
+figure(5);
+plot(...
+    ts,xs_rec(1,:),...
+    ts,xs_rec(4,:),...
+    ts,xs_rec(7,:),...
+    ts,xs_rec(10,:),...
+    ts,xs_rec(13,:)...
+)
+legend('position','velocity','acceleration','jerk','snap');
+
+
+
 xg = zeros(n,3);
 ve = zeros(n,3);
 xq = zeros(n,3);
@@ -25,7 +38,7 @@ for i=1:n
     xg(i,:) = xs+Lg_*mq_/(mg_+mq_)*Rg*e1;
     xq(i,:) = xg(i,:)' - Lg_*Rg*e1;
     ve(i,:) = xs_d + Rg*cross(w,Rg.'*(xg(i,:).'-xs)*Le_/Lg_);
-    xe(i,:) = xs + (xg(i,:).'-xs)*Le_/Lg_;
+    xe(i,:) = xs + Ls_*Rg*e1;
     Oms(i,:) = .2*Rq*Om;
     ws(i,:) = .2*Rg*w;
     constraint_check(i,:) = (Rg*e2).'*(Rq*e1);
@@ -99,6 +112,7 @@ if(show_profile_plots)
 end
 
 
+
 %% Visualize Robot
 % state(:,4:21) = state(:,4:21);
 figure(1)
@@ -108,7 +122,7 @@ if(exist('az') && exist('el'))
 end
 
 step = 50;
-for range=1:step:n
+for range=[1:step:n n]
     [az,el]=view;
     cla;
     hold on;
@@ -117,7 +131,12 @@ for range=1:step:n
     pts = 1:d_trail:range;
     plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.m','MarkerSize',15)
     plot3(xq(pts,1),xq(pts,2),xq(pts,3),'.k','MarkerSize',15)
+    plot3(state(pts,1),state(pts,2),state(pts,3),'.b','MarkerSize',15)
     
+    plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'.')
+    plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'.')
+    plot3(xq_rec(1,:),xq_rec(2,:),xq_rec(3,:),'.')
+
 %     quiver3(xq(range,1),xq(range,2),xq(range,3),state(range,4),state(range,5),state(range,6),'AutoScale','off','color',[1 0 0]);
 %     quiver3(xq(range,1),xq(range,2),xq(range,3),state(range,7),state(range,8),state(range,9),'AutoScale','off','color',[0 1 0]);
 %     quiver3(xq(range,1),xq(range,2),xq(range,3),state(range,10),state(range,11),state(range,12),'AutoScale','off','color',[0 0 1]);

@@ -33,37 +33,82 @@ a = [
 % the necessary accelerations in state space to follow it 
 
 t = segment_dt*j;
+
+if(nargin(angular_derivatives) > 0)
+    angular = angular_derivatives(t);
+else
+    angular = angular_derivatives();
+end
+if(nargin(desired_orientation) > 0)
+    Rg_des = desired_orientation(t); 
+else
+    Rg_des = desired_orientation();
+end
+
+
+w_des     = angular(1,:).';
+w_d_des   = angular(2,:).';
+w_dd_des  = angular(3,:).';
+w_ddd_des = angular(4,:).';
+
 flat_state = compute_derivatives(C,t);
 
 % determine these based on trajectory 
-x_dd_des = [flat_state(3);0;0]; % COM acceleration (2nd derivative)
-x_ddd_des = [flat_state(4);0;0]; % COM jerk (3rd derivative)
-x_dddd_des = [flat_state(5);0;0]; % COM snap (4th derivative)
+% xe_des = [flat_state(1);0;0];
+% xe_d_des = [flat_state(2);0;0];
+% xe_dd_des = [flat_state(3);0;0]; % COM acceleration (2nd derivative)
+% xe_ddd_des = [flat_state(4);0;0]; % COM jerk (3rd derivative)
+% xe_dddd_des = [flat_state(5);0;0]; % COM snap (4th derivative)
 
-% x_dd_des = [0;0;0]; % COM acceleration (2nd derivative)
-% x_ddd_des = [0;0;0]; % COM jerk (3rd derivative)
-% x_dddd_des = [0;0;0]; % COM snap (4th derivative)
+xe_des      = [0;flat_state(1);0];
+xe_d_des    = [0;flat_state(2);0];
+xe_dd_des   = [0;flat_state(3);0]; % COM acceleration (2nd derivative)
+xe_ddd_des  = [0;flat_state(4);0]; % COM jerk (3rd derivative)
+xe_dddd_des = [0;flat_state(5);0]; % COM snap (4th derivative)
 
-% x_dd_des = [0;flat_state(3);0]; % COM acceleration (2nd derivative)
-% x_ddd_des = [0;flat_state(4);0]; % COM jerk (3rd derivative)
-% x_dddd_des = [0;flat_state(5);0]; % COM snap (4th derivative)
-% x_dd_des = [0;0;flat_state(3)]; % COM acceleration (2nd derivative)
-% x_ddd_des = [0;0;flat_state(4)]; % COM jerk (3rd derivative)
-% x_dddd_des = [0;0;flat_state(5)]; % COM snap (4th derivative)
 
-% 15*cos(t*(4*pi))
+% xs_dd_des = xe_dd_des-Ls_*Rg_des*(hat(w_d_des)+hat(w_des)^2)*e1;
+% % xs_dd_rec(:,j) = xs_dd_des;
+% 
+% xs_ddd_des = xe_ddd_des-Ls_*Rg_des*(hat(w_dd_des) + hat(w_d_des)*hat(w_des)+2*hat(w_des)*hat(w_d_des)+hat(w_des)^3)*e1;
+% % 
+% xs_dddd_des = xe_dd_des-Ls_*Rg_des*(hat(w_ddd_des) + hat(w_dd_des)*hat(w_des) + 3*hat(w_d_des)^2 + 2*hat(w_des)*hat(w_dd_des) + 3*hat(w_des)*hat(w_d_des) + hat(w_des)*hat(w_dd_des) + hat(w_des)*hat(w_d_des)*hat(w_des) + 2 * hat(w_des)^2*hat(w_d_des) + hat(w_des)^4)*e1;
 
-if(t < .5)
-    w_d_des = [4;7*pi/2; 0]; % Gripper angular acceleration 
-else
-    w_d_des = [-4;-7*pi/2; 0]; % Gripper angular acceleration 
-end
-% sol = solve(compute_thrust_constraint_state(eye(3),Om_d_des,zeros(3),zeros(3),zeros(3),zeros(3)) == 0,Om_d_des)
-F = compute_F_state(Rg, Rq,x_dd_des);
-d = compute_d_state(Rg,Rq,Om,w,w_d_des,x_dd_des,x_ddd_des,x_dddd_des);
+% xs_dd_des
 
-REF = rref([F d]);
 
+
+% xs_dd_des = xe_dd_des;
+% xs_ddd_des = xe_ddd_des;
+% xs_dddd_des = xe_dddd_des;
+
+wh = hat(w_des);
+wdh = hat(w_d_des);
+wddh = hat(w_dd_des);
+wdddh = hat(w_ddd_des);
+
+xs_des = xe_des-Ls_*Rg_des*e1;
+xs_d_des = xe_d_des-Ls_*Rg_des*wh*e1;
+xs_dd_des = xe_dd_des-Ls_*Rg_des*(wdh+wh^2)*e1;
+xs_ddd_des = xe_ddd_des-Ls_*Rg_des*(wddh + 3*wh*wdh + wh^3)*e1;
+xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
+
+
+xq_des = xe_des-Le_*Rg_des*e1;
+xq_rec(:,j) = xq_des;
+xe_rec(:,j) = xe_des;
+
+
+xs_rec(1:3,j) = xs_des;
+xs_rec(4:6,j) = xs_d_des;
+xs_rec(7:9,j) = xs_dd_des;
+xs_rec(10:12,j) = xs_ddd_des;
+xs_rec(13:15,j) = xs_dddd_des;
+
+%% 
+
+F = compute_F_state(Rg, Rq,xs_dd_des);
+d = compute_d_state(Rg_des,Rq,Om,w_des,w_d_des,xs_dd_des,xs_ddd_des,xs_dddd_des);
 
 H = [F d];
 [U,S,V] = svd(H);
@@ -78,18 +123,8 @@ end
 REF = rref(H);
 Om_d_des = double(REF(1:3,4));
 
-% if(REF(end,:) == zeros(1,4))
-%     Om_d_des = double(REF(1:3,4));
-% else
-%     Om_d_des = zeros(3,1);
-%     s = svd(G)
-%     disp('Error: encountered inconsistent system in differential flatness');
-%     disp(s(1) / s(end));
-% 
-% end
-
 % fictitious input
-acc_des = [x_dd_des(3); Om_d_des; w_d_des];
+acc_des = [xs_dd_des(3); Om_d_des; w_d_des];
 
 % TODO : Later will need to compute desired velocities and positions based
 % on differential flatness in order to do TVLQR
@@ -107,9 +142,6 @@ G = [B (M*acc_des - a)];
 
 % if(REF(end,:) ~= zeros(1,7))
 if(S(end) ~= 0)
-%     disp('Warning: encountered inconsistent system in feedback linearization. Using previous control input.');
-%     disp('Singular Value Ratio:')
-%     disp(singular_vals(1) / singular_vals(end));
     S(end) = 0;
     G = U*S*V.';
 end
