@@ -6,6 +6,7 @@ show_profile_plots = true;
 
 
 figure(5);
+clf;
 plot(...
     ts,xs_rec(1,:),...
     ts,xs_rec(4,:),...
@@ -129,9 +130,9 @@ for range=[1:step:n n]
     view(az,el);
     d_trail = 50;
     pts = 1:d_trail:range;
-    plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.m','MarkerSize',15)
-    plot3(xq(pts,1),xq(pts,2),xq(pts,3),'.k','MarkerSize',15)
-    plot3(state(pts,1),state(pts,2),state(pts,3),'.b','MarkerSize',15)
+    plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.g','MarkerSize',15)
+    plot3(xq(pts,1),xq(pts,2),xq(pts,3),'.b','MarkerSize',15)
+    plot3(state(pts,1),state(pts,2),state(pts,3),'.m','MarkerSize',15)
     
     plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'.')
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'.')

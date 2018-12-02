@@ -54,17 +54,17 @@ w_ddd_des = angular(4,:).';
 flat_state = compute_derivatives(C,t);
 
 % determine these based on trajectory 
-% xe_des = [flat_state(1);0;0];
-% xe_d_des = [flat_state(2);0;0];
-% xe_dd_des = [flat_state(3);0;0]; % COM acceleration (2nd derivative)
-% xe_ddd_des = [flat_state(4);0;0]; % COM jerk (3rd derivative)
-% xe_dddd_des = [flat_state(5);0;0]; % COM snap (4th derivative)
+xe_des = [flat_state(1);0;0];
+xe_d_des = [flat_state(2);0;0];
+xe_dd_des = [flat_state(3);0;0]; % COM acceleration (2nd derivative)
+xe_ddd_des = [flat_state(4);0;0]; % COM jerk (3rd derivative)
+xe_dddd_des = [flat_state(5);0;0]; % COM snap (4th derivative)
 
-xe_des      = [0;flat_state(1);0];
-xe_d_des    = [0;flat_state(2);0];
-xe_dd_des   = [0;flat_state(3);0]; % COM acceleration (2nd derivative)
-xe_ddd_des  = [0;flat_state(4);0]; % COM jerk (3rd derivative)
-xe_dddd_des = [0;flat_state(5);0]; % COM snap (4th derivative)
+% xe_des      = [0;flat_state(1);0];
+% xe_d_des    = [0;flat_state(2);0];
+% xe_dd_des   = [0;flat_state(3);0]; % COM acceleration (2nd derivative)
+% xe_ddd_des  = [0;flat_state(4);0]; % COM jerk (3rd derivative)
+% xe_dddd_des = [0;flat_state(5);0]; % COM snap (4th derivative)
 
 
 % xs_dd_des = xe_dd_des-Ls_*Rg_des*(hat(w_d_des)+hat(w_des)^2)*e1;
@@ -87,15 +87,25 @@ wdh = hat(w_d_des);
 wddh = hat(w_dd_des);
 wdddh = hat(w_ddd_des);
 
-xs_des = xe_des-Ls_*Rg_des*e1;
-xs_d_des = xe_d_des-Ls_*Rg_des*wh*e1;
-xs_dd_des = xe_dd_des-Ls_*Rg_des*(wdh+wh^2)*e1;
-xs_ddd_des = xe_ddd_des-Ls_*Rg_des*(wddh + 3*wh*wdh + wh^3)*e1;
-xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
+% xs_des = xe_des-Ls_*Rg_des*e1;
+% xs_d_des = xe_d_des-Ls_*Rg_des*wh*e1;
+% xs_dd_des = xe_dd_des-Ls_*Rg_des*(wdh+wh^2)*e1;
+% xs_ddd_des = xe_ddd_des-Ls_*Rg_des*(wddh + 3*wh*wdh + wh^3)*e1;
+% xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
+
+xs_des = xe_des;
+xs_d_des = xe_d_des;
+xs_dd_des = xe_dd_des;
+xs_ddd_des = xe_ddd_des;
+xs_dddd_des = xe_dddd_des;
 
 
-xq_des = xe_des-Le_*Rg_des*e1;
-xq_rec(:,j) = xq_des;
+% xq_des = xs_des-Le_*Rg_des*e1;
+% 
+%     xg(i,:) = 
+%     xq(i,:) = xg(i,:)' - Lg_*Rg*e1;
+
+xq_rec(:,j) = xs-Lg_*mg_/(mg_+mq_)*Rg*e1;;
 xe_rec(:,j) = xe_des;
 
 

@@ -22,7 +22,7 @@ planning_matrix;
 % final_state = [4;5;0;0];
 
 init_state = [0;0;0;0];
-final_state = [-.1;0;0;0];
+final_state = [-.5;0;0;0];
 
 
 C = D*[init_state;final_state];
@@ -69,7 +69,7 @@ angular_derivatives = matlabFunction([
 % plot((1:n)*segment_dt,ang_vel);
 % legend('Om1','Om2','Om3');
 
-decim = 10;
+% decim = 10;
 % 
 % Rg_x_des = zeros(3,n/decim);
 % Rg_y_des = zeros(3,n/decim);
@@ -96,7 +96,6 @@ decim = 10;
 
 u_ff = zeros(6,1); % TODO : eliminate
 
-xs_dd_rec = zeros(3,n);
 xs_rec = zeros(15,n);
 xe_rec = zeros(3,n);
 xq_rec = zeros(3,n);
@@ -104,7 +103,8 @@ xq_rec = zeros(3,n);
 for j=1:n
     
     % compute feedforward control
-    
+    compute_ff;
+
     % integrate dynamics 
     tspan=segment_dt*(j-1)+[0 segment_dt];
     [~,qs] = ode45(@(t,x) ode(x,u_ff),tspan,current_state);   
@@ -116,13 +116,13 @@ for j=1:n
     Rq = U * V';
     [U, ~, V] = svd(Rg);
     Rg = U * V';
+
     
     % record state and control inputs for plotting
     state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w);
     us(j,:) = u_ff.';
 
-    compute_ff;
-%     u_ff = zeros(6,1);
+%     compute_ff;
  
 end
 
