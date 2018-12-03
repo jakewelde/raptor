@@ -48,9 +48,9 @@ end
 
 %% Plot trajectories
 
-figure(2);
-
 if(show_profile_plots)
+    
+    figure(2);
     subplot(4,2,1);
     cla;
     hold on;
@@ -110,6 +110,7 @@ drawnow;
 
 
 %% Visualize Robot
+
 figure(1)
 if(exist('az') && exist('el'))
     view(az,el)
@@ -121,15 +122,14 @@ for range=[1:step:n n]
     cla;
     hold on;
     view(az,el);
-    d_trail = 50;
-    pts = 1:d_trail:range;
-    plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.g','MarkerSize',15)
-    plot3(xq(pts,1),xq(pts,2),xq(pts,3),'.b','MarkerSize',15)
-    plot3(state(pts,1),state(pts,2),state(pts,3),'.m','MarkerSize',15)
-    
-    plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'.')
-    plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'.')
-    plot3(xq_rec(1,:),xq_rec(2,:),xq_rec(3,:),'.')
+    d_trail = 700;
+    pts = [1:d_trail:range range];
+    plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.','MarkerSize',15,'color',[.9 .2 .6])
+    plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'color',[.9 .2 .6])
+%     plot3(xq(pts,1),xq(pts,2),xq(pts,3),'.','MarkerSize',5,'color',[.2 .6 .2])
+%     plot3(state(pts,1),state(pts,2),state(pts,3),'.','MarkerSize',5,'color',[.2 .2 .8])
+%     plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'y')
+%     plot3(xq_rec(1,:),xq_rec(2,:),xq_rec(3,:),'-m')
 
     draw_robot(state(range,:));
     axis equal    
