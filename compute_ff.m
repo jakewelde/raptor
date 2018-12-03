@@ -20,13 +20,17 @@ w_d_des   = angular(2,:).';
 w_dd_des  = angular(3,:).';
 w_ddd_des = angular(4,:).';
 
-flat_state = compute_derivatives(C,t);
+flat_state = zeros(5,3);
 
-xe_des = [flat_state(1);0;0];
-xe_d_des = [flat_state(2);0;0];
-xe_dd_des = [flat_state(3);0;0]; % COM acceleration (2nd derivative)
-xe_ddd_des = [flat_state(4);0;0]; % COM jerk (3rd derivative)
-xe_dddd_des = [flat_state(5);0;0]; % COM snap (4th derivative)
+flat_state(:,1) = compute_derivatives(trajectory.x,t,total_dt);
+flat_state(:,2) = compute_derivatives(trajectory.y,t,total_dt);
+flat_state(:,3) = compute_derivatives(trajectory.z,t,total_dt);
+
+     xe_des = flat_state(1,:).'; % end effector position     (0th derivative)
+   xe_d_des = flat_state(2,:).'; % end effector velocity     (1st derivative)
+  xe_dd_des = flat_state(3,:).'; % end effector acceleration (2nd derivative)
+ xe_ddd_des = flat_state(4,:).'; % end effector jerk         (3rd derivative)
+xe_dddd_des = flat_state(5,:).'; % end effector snap         (4th derivative)
 
 wh = hat(w_des);
 wdh = hat(w_d_des);
@@ -45,10 +49,14 @@ xs_dd_des = xe_dd_des-Ls_*Rg_des*(wdh+wh^2)*e1;
 xs_ddd_des = xe_ddd_des-Ls_*Rg_des*(wddh + 3*wh*wdh + wh^3)*e1;
 xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
 
-% record spatial trajectories for for visualization
-xe_rec(:,j) = xe_des;
+% record spatial trajectories for visualization
+xe_rec(1:3,j) = xe_des;
+xe_rec(4:6,j) = xe_d_des;
 xs_rec(1:3,j) = xs_des;
-xq_rec(:,j) = xs_des-Lg_*mg_/(mg_+mq_)*Rg_des*e1;;
+xs_rec(4:6,j) = xs_d_des;
+
+% record angular trajectories for visualization
+w_rec(:,j) = w_des;
 
 % find angular acceleration of quadrotor body
 F = compute_F_state(Rg, Rq,xs_dd_des);

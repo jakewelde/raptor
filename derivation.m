@@ -15,7 +15,7 @@
 % 
 % The final constraint comes from the kinematics of the robot. Becuase
 % there are only two joints between the two bodies, there is a constraint
-% on their relative angular velocity since it can not be any arbitrary
+% on their relative angular velocity since it cannot be any arbitrary
 % direction. In particular, consider the difference between their angular
 % velocities, expressed in a common frame. The projection of this vector
 % onto the direction that is instantaneously perpendicular to both motor
@@ -182,7 +182,7 @@ x_dddd_des = sym('x_dddd_des',[3 1]);
 
 thrust    = (Rq*e3).' * (mg+mq) * (x_dd_des + g*e3);
 thrust_d  = (Rq*e3).' * (mg+mq) * x_ddd_des;
-thrust_dd = (Rq*e3).' * (mg+mq) * x_dddd_des - thrust*e3.'*(hat(Om_d) + hat(Om)^2)*e3;
+thrust_dd = (Rq*e3).' * (mg+mq) * x_dddd_des - thrust*e3.'*hat(Om)^2*e3;
 
 dynamics_thrust_constraint = ...
      -(mg+mq) * x_dddd_des + ...

@@ -5,6 +5,7 @@ ts = segment_dt*(1:n);
 show_profile_plots = true;
 
 xg = zeros(n,3);
+xe = zeros(n,3);
 ve = zeros(n,3);
 xq = zeros(n,3);
 Oms = zeros(n,3);
@@ -51,6 +52,7 @@ end
 if(show_profile_plots)
     
     figure(2);
+    clf;
     subplot(4,2,1);
     cla;
     hold on;
@@ -58,8 +60,8 @@ if(show_profile_plots)
     plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
     hold off;
     title('system center of mass position');
-    legend('x','y','z');
     ylabel('position [m]')
+    
     subplot(4,2,3);
     cla;
     hold on;
@@ -67,47 +69,56 @@ if(show_profile_plots)
     plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
     hold off;
     title('system center of mass velocity');
-    legend('x','y','z');
-    ylabel('velocity [m]')
+    ylabel('velocity [m/s]')
+    
     subplot(4,2,5);
     plot(ts,state(:,25),ts,state(:,26),ts,state(:,27));
     title('quad angular velocity');
-    legend('Om1','Om2','Om3');
     ylabel('velocity [1/s]')
+    
     subplot(4,2,7);
-    plot(ts,state(:,28),ts,state(:,29),ts,state(:,30));
+    cla;
+    hold on;
+    plot(ts,state(:,28),'r',ts,state(:,29),'g',ts,state(:,30),'b');
+    plot(ts,w_rec(1,:),'r--',ts,w_rec(2,:),'g--',ts,w_rec(3,:),'b--');
+    hold off;
     title('gripper angular velocity');
-    legend('w1','w2','w3');
     ylabel('velocity [1/s]')
-    legend('x','y','z');
 
     subplot(4,2,2);
+    cla;
+    hold on;
+    plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
+    plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
+    hold off;
+    title('end effector position in world');
+    ylabel('position [m]')
+
+    subplot(4,2,4);
+    cla;
+    hold on;
+    plot(ts,ve(:,1),'r',ts,ve(:,2),'g',ts,ve(:,3),'b');
+    plot(ts,xe_rec(4,:),'r--',ts,xe_rec(5,:),'g--',ts,xe_rec(6,:),'b--');
+    hold off;
+    title('end effector velocity in world');
+    ylabel('velocity [m/s]')
+
+   
+    subplot(4,2,6);
     plot(ts,us);
     title('control efforts');
     legend('f','M1','M2','M3','T1','T2');
-
-    subplot(4,2,4);
-    plot(ts,ve);
-    title('end effector velocity in world');
-    legend('x','y','z');
-    ylabel('velocity[m/s]')
-    
-    subplot(4,2,6);
-    plot(ts,energy-energy(1));
-    title('change in energy');
-    ylabel('energy [J]')
+    ylabel('[N] or [N \cdot m]')
 
     subplot(4,2,8);
     plot(ts,constraint_check);
-    title('f(x) = 0');
-    legend('rotation');
-    ylabel('constraint')    
+    title('g_2 \cdot b_1 = 0');
+    ylabel('[radians]')    
     
 end
 
 shg;
 drawnow;
-
 
 %% Visualize Robot
 
@@ -116,13 +127,13 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 500;
+step = 100;
 for range=[1:step:n n]
     [az,el]=view;
     cla;
     hold on;
     view(az,el);
-    d_trail = 700;
+    d_trail = 70;
     pts = [1:d_trail:range range];
     plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.','MarkerSize',15,'color',[.9 .2 .6])
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'color',[.9 .2 .6])
