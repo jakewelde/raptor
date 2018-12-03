@@ -16,40 +16,20 @@ us = zeros(n,6);
 
 planning_matrix;
 
-% init_state = [pi/8;0;0;0];
-% final_state = [pi-pi/8;0;0;0];
-% init_state = [0;3;0;0];
-% final_state = [4;5;0;0];
-
 init_state = [0;0;0;0];
 final_state = [.5;0;0;0];
 
-
 C = D*[init_state;final_state];
 
-% figure(3);
-
-derivatives = zeros(5,n);
-for j=1:n
-   derivatives(:,j) = compute_derivatives(C,j*segment_dt);
-end
-
-
-plot((1:n)*segment_dt,derivatives(1,:));
-
-shg;
-
 init_angle = [pi/2;0;0;0];
-% final_angle = [pi/2;0;0;0];
 final_angle = [7*pi/8;0;0;0];
 C_R = D*[init_angle;final_angle];
 
-% init_wrist = [0;0;0;0];
-% final_wrist = [pi/2;0;0;0];
-% C_W = D*[init_wrist;final_wrist];
+init_wrist = [0;0;0;0];
+final_wrist = [pi/6;0;0;0];
+C_W = D*[init_wrist;final_wrist];
 
-Rg_des = axisangle(e2,basis*C_R);
-%  *axisangle(e1,basis*C_W);
+Rg_des = axisangle(e2,basis*C_R)*axisangle(e1,basis*C_W);
 
 w_des = unhat(Rg_des.' * diff(Rg_des,time));
 w_d_des = diff(w_des,time);
@@ -60,40 +40,6 @@ desired_orientation = matlabFunction(Rg_des);
 angular_derivatives = matlabFunction([
    w_des w_d_des w_dd_des w_ddd_des
 ].');
-
-
-% ang_vel = zeros(3,n);
-% for j=1:10:n
-%    deriv = angular_derivatives(j*segment_dt);
-%    ang_vel(:,j) = deriv(1,:);
-% end
-
-% clf;
-% plot((1:n)*segment_dt,ang_vel);
-% legend('Om1','Om2','Om3');
-
-% decim = 10;
-% 
-% Rg_x_des = zeros(3,n/decim);
-% Rg_y_des = zeros(3,n/decim);
-% Rg_z_des = zeros(3,n/decim);
-% for j=1:n/decim
-%     Rg_des_t = desired_orientation(j*segment_dt*decim);
-%     Rg_x_des(:,j) = Rg_des_t(:,1);
-%     Rg_y_des(:,j) = Rg_des_t(:,2);
-%     Rg_z_des(:,j) = Rg_des_t(:,3);
-% end
-
-% zo = zeros(1,n/decim);
-% figure(4);
-% clf;
-% hold on;
-% quiver3(zo,zo,zo,Rg_x_des(1,:),Rg_x_des(2,:),Rg_x_des(3,:),'color',[1 0 0]);
-% quiver3(zo,zo,zo,Rg_y_des(1,:),Rg_y_des(2,:),Rg_y_des(3,:),'color',[0 1 0]);
-% quiver3(zo,zo,zo,Rg_z_des(1,:),Rg_z_des(2,:),Rg_z_des(3,:),'color',[0 0 1]);
-% xlabel('x'); ylabel('y'); zlabel('z');
-% hold off;
-% pause
 
 %% Dynamic Simulation
 
@@ -110,7 +56,7 @@ for j=1:n
 
     % integrate dynamics 
     tspan=segment_dt*(j-1)+[0 segment_dt];
-    [~,qs] = ode113(@(t,x) ode(x,u_ff),tspan,current_state);   
+    [~,qs] = ode45(@(t,x) ode(x,u_ff),tspan,current_state);   
     current_state = qs(end,:)';
     
     % reorthonormalize rotation matrices (project back onto manifold)

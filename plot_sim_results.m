@@ -4,20 +4,6 @@ ts = segment_dt*(1:n);
 
 show_profile_plots = true;
 
-% 
-% figure(5);
-% clf;
-% plot(...
-%     ts,xs_rec(1,:),...
-%     ts,xs_rec(4,:),...
-%     ts,xs_rec(7,:),...
-%     ts,xs_rec(10,:),...
-%     ts,xs_rec(13,:)...
-% )
-% legend('position','velocity','acceleration','jerk','snap');
-% 
-
-
 xg = zeros(n,3);
 ve = zeros(n,3);
 xq = zeros(n,3);
@@ -32,7 +18,7 @@ Jq_ = diag([Jqx_ Jqy_ Jqz_]); % quad inertia
 Jg_ = diag([Jgx_ Jgy_ Jgz_]); % gripper inertia
 
 %% Compute constraint checks, energy, and reformat variables
-global Le_ Lg_
+global Le_ Lg_ Ls_
 
 for i=1:n
     [xs,Rq,Rg,xs_d,Om,w] = state_from_vector(state(i,:).');
@@ -62,26 +48,6 @@ end
 
 %% Plot trajectories
 
-
-accel = zeros(1,n);
-b3 = zeros(3,n);
-for i=1:n
-    R = reshape(state(i,4:12),[3 3]);
-    b3(:,i) = R(:,3);
-    accel(i) = e1.'*(us(i,1)*R*e3/(mg_+mq_));
-end
-
-integrated_velocity = cumsum(us(:,3)-us(:,6))*segment_dt / Jqx_;
-integrated_angle = cumsum(integrated_velocity)*segment_dt;
-
-figure(7);
-clf;
-hold on;
-plot(ts,b3(1,:),ts,us(:,3)-us(:,6),ts,sin(integrated_angle))
-plot([0 1],[0 0],'k')
-legend('b3 x direction','net moment on quad','angle by integrated velocity')
-hold off;
-
 figure(2);
 
 if(show_profile_plots)
@@ -90,7 +56,6 @@ if(show_profile_plots)
     hold on;
     plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
     plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
-%     plot(ts,cumsum(segment_dt*cumsum(segment_dt*(us(:,1)/(mg_+mq_)-g_))),'k')
     hold off;
     title('system center of mass position');
     legend('x','y','z');
@@ -100,7 +65,6 @@ if(show_profile_plots)
     hold on;
     plot(ts,state(:,22),'r',ts,state(:,23),'g',ts,state(:,24),'b');
     plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
-%     plot(ts,cumsum(segment_dt*(us(:,1)/(mg_+mq_)-g_)),'k')
     hold off;
     title('system center of mass velocity');
     legend('x','y','z');
@@ -146,9 +110,7 @@ drawnow;
 
 
 %% Visualize Robot
-% state(:,4:21) = state(:,4:21);
 figure(1)
-% range = 1:20:n;
 if(exist('az') && exist('el'))
     view(az,el)
 end
