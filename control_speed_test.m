@@ -5,4 +5,3 @@ for i=1:size(time,1)
     time(i) = toc;
 end
 mean(time)
-variance(time)

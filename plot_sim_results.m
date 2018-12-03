@@ -126,10 +126,6 @@ for range=[1:step:n n]
     pts = [1:d_trail:range range];
     plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.','MarkerSize',15,'color',[.9 .2 .6])
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'color',[.9 .2 .6])
-%     plot3(xq(pts,1),xq(pts,2),xq(pts,3),'.','MarkerSize',5,'color',[.2 .6 .2])
-%     plot3(state(pts,1),state(pts,2),state(pts,3),'.','MarkerSize',5,'color',[.2 .2 .8])
-%     plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'y')
-%     plot3(xq_rec(1,:),xq_rec(2,:),xq_rec(3,:),'-m')
 
     draw_robot(state(range,:));
     axis equal    

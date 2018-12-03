@@ -1,7 +1,13 @@
-%% Initial state defined here
-set_initial_conditions;
+%% Set Initial Conditions
 
-%% Configure simulation parameters
+Rg0 = axisangle(e2,pi/2);
+
+x0 = vector_from_state(...
+    [0;0;Ls_],Rq0,Rg0,...
+    [0;0;0],[0;0;0],Rg0.'*[0;0;0]...
+);
+
+%% Configure Simulation Parameters
 segment_dt = .0001;
 total_dt = 1;
 n = floor(total_dt/segment_dt);
@@ -12,7 +18,7 @@ current_state = x0;
 us = zeros(n,6);
 [xs, Rq, Rg, xs_d, Om, w] = state_from_vector(x0);
 
-%% Plan trajectory
+%% Plan Trajectory
 
 planning_matrix;
 
@@ -42,8 +48,6 @@ angular_derivatives = matlabFunction([
 ].');
 
 %% Dynamic Simulation
-
-u_ff = zeros(6,1); % TODO : eliminate
 
 xs_rec = zeros(15,n);
 xe_rec = zeros(3,n);
