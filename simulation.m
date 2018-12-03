@@ -70,15 +70,12 @@ for j=1:n
     [U, ~, V] = svd(Rg);
     Rg = U * V';
 
-    
     % record state and control inputs for plotting
     state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w);
     us(j,:) = u_ff.';
-
-%     compute_ff;
  
 end
 
-%% Plotting
+%% Visualization
 
 plot_sim_results
