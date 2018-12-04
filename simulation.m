@@ -5,8 +5,7 @@ Rg0 = axisangle(e2,pi/2); % arm downwards
 
 x0 = vector_from_state(...
     [0;0;Ls_],Rq0,Rg0,...
-    [0;0;0],[0;0;0],Rg0.'*[0;0;0],...
-    [-2;-2;-4],[1;1;10]...
+    [0;0;0],[0;0;0],Rg0.'*[0;0;0]...
 );
 
 %% Configure Simulation Parameters
@@ -18,25 +17,37 @@ state(1,:) = x0;
 current_state = x0;
 
 us = zeros(n,6);
-[xs, Rq, Rg, xs_d, Om, w, xb, xb_d] = state_from_vector(x0);
+[xs, Rq, Rg, xs_d, Om, w] = state_from_vector(x0);
+
+
+%% Ball trajectory
+
+z0 = [-.5; 0; -4; .5; -.7; 8];
+
+ball_position = zeros(3,n);
+ball_velocity = zeros(3,n);
+
+time = 0:segment_dt:total_dt;
+
+for i=1:size(time,2)
+   t = time(i);
+   ball_position(:,i) = z0(1:3) + z0(4:6)*t - 1/2*g_*t^2*e3;
+end
+
 
 %% Plan Trajectory
 
-    trajectory.x = find_coefficients([0;0;0;0],[.3;-.4;0;0],total_dt);
-    trajectory.y = find_coefficients([0;0;0;0],[0;.1;0;0],total_dt);
-    trajectory.z = find_coefficients([0;0;0;0],[-.2;.5;0;0],total_dt);
- trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
+trajectory.x = find_coefficients([0;0;0;0],[.3;-.4;0;0],total_dt);
+trajectory.y = find_coefficients([0;0;0;0],[0;.1;0;0],total_dt);
+trajectory.z = find_coefficients([0;0;0;0],[-.2;.5;0;0],total_dt);
+trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
 trajectory.b = find_coefficients([pi/2;0;0;0],[.9*pi/2;0;0;0],total_dt);
 trajectory.g = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
 
 stacked = [
-    trajectory.x;
-    trajectory.y;
-    trajectory.z;
-    trajectory.a;
-    trajectory.b;
-    trajectory.g;
-]    
+    trajectory.x; trajectory.y; trajectory.z;
+    trajectory.a; trajectory.b; trajectory.g;
+];    
 
 %% Dynamic Simulation
 
@@ -77,7 +88,7 @@ for j=1:n
     Rg = U * V';
 
     % record state and control inputs for plotting
-    state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w, xb, xb_d);
+    state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w);
     us(j,:) = u_ff.';
  
 end

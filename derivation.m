@@ -343,7 +343,7 @@ compute_o_state = @(Rg, Rq, w, x_dd_des, x_ddd_des) compute_o_all(Rg(1,1),Rg(1,2
 % provide to MATLAB ode solver.
 
 % derivative of center of mass position is center of mass velocity
-velocity_cascade = zeros(3,(3+9+9+3+3+3+6));
+velocity_cascade = zeros(3,(3+9+9+3+3+3));
 velocity_cascade(1:3,3+9+9+(1:3)) = eye(3);
 
 ode = @(x,u) [
@@ -352,8 +352,6 @@ ode = @(x,u) [
   reshape(sp(x(13:(13+8)),hat(x(28:30))),[9 1]); % d/dt Rg = Rg w_hat
   u(1)/(mg_+mq_)*sp(x(4:(4+8)),e3) - g_*e3; % acceleration of system center of mass is due to gravity and thrust
   compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)));
-  x(34:36);
-  0;0;-g_;
 ];
 
 % x = [x_s; Rq; Rg; xs_d; Om; w]
