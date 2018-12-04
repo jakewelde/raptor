@@ -22,21 +22,21 @@ us = zeros(n,6);
 
 %% Plan Trajectory
 
-trajectory_planning;
-
-%     trajectory.x = find_coefficients([0;0;0;0],[.25;0;0;0],total_dt);
-%     trajectory.y = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-%     trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-%  trajectory.roll = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-% trajectory.swing = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt);
-% trajectory.wrist = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-
     trajectory.x = find_coefficients([0;0;0;0],[.3;-.4;0;0],total_dt);
     trajectory.y = find_coefficients([0;0;0;0],[0;.1;0;0],total_dt);
     trajectory.z = find_coefficients([0;0;0;0],[-.2;.5;0;0],total_dt);
  trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
 trajectory.b = find_coefficients([pi/2;0;0;0],[.9*pi/2;0;0;0],total_dt);
 trajectory.g = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
+
+stacked = [
+    trajectory.x;
+    trajectory.y;
+    trajectory.z;
+    trajectory.a;
+    trajectory.b;
+    trajectory.g;
+]    
 
 %% Dynamic Simulation
 
@@ -57,9 +57,13 @@ for j=1:n
       percent_done = percent;
     end
 
+    t = segment_dt * j;
+    
     % compute feedforward control
-    compute_ff;
+    [u_ff, xe_des, xs_des, w_des, Om_des] = compute_control(stacked, t, total_dt);
 
+    record_nominal_trajectory;
+    
     % integrate dynamics 
     tspan=segment_dt*(j-1)+[0 segment_dt];
     [~,qs] = ode45(@(t,x) ode(x,u_ff),tspan,current_state);   

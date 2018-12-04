@@ -113,6 +113,8 @@ top_affine_part = -simplify(combination - top_3_rows*acc);
 % angular velocities due to missing degree of freedom between the bodies
 kinematic_constraint_exp = (cross(Rq*e1,Rg*hat(w)*e2)+cross(Rq*hat(Om)*e1,Rg*e2)).'*(Rg*w-Rq*Om)+cross(Rq*e1,Rg*e2).'*( Rg*hat(w)*w - Rq*hat(Om)*Om + Rg*w_d - Rq*Om_d ); % == 0;
 
+(cross(Rq*e1,Rg*hat(w)*e2)+cross(Rq*hat(Om)*e1,Rg*e2)).'*(Rg*w-Rq*Om)+cross(Rq*e1,Rg*e2).'*( Rg*hat(w)*w - Rq*hat(Om)*Om + Rg*w_d - Rq*Om_d ); % == 0;
+
 % torque between bodies projected onto actuator axes equals the torque
 % applied by those actuators
 torque_constraint_1_exp = (Rg*Mr_quad).'*Rq*e1 - T1; % == 0
@@ -203,6 +205,20 @@ d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
 compute_F_all = matlabFunction(F);
 compute_d_all = matlabFunction(d);
 
+%% Angular for differential flatness
+
+quad_velocity_constraints = [
+    (Rq*Om - Rg*w).'*cross(Rg*e2,Rq*e1); % == 0
+    [e1.'; e2.'] * Om - 1 / (norm(x_dd_des+g*e3)) * [-(Rq*e2).'; (Rq*e1).']*x_ddd_des; % == 0 
+];
+
+% L Om = o
+
+L = simplify(jacobian(quad_velocity_constraints,Om));
+o = -simplify(expand(quad_velocity_constraints - L * Om));
+
+compute_L_all = matlabFunction(L);
+compute_o_all = matlabFunction(o);
 
 %% Euler Angle planning
  
@@ -303,6 +319,9 @@ Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 % creating to use with numerical inputs and outputs so that we don't have
 % to supply these parameters every time we call the functions.
 
+global compute_M_state compute_B_state compute_a_state
+global compute_F_state compute_d_state compute_L_state compute_o_state
+
 % dynamics
 compute_M_state = @(Rg,Rq) compute_M_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
 compute_B_state = @(Rg,Rq) compute_B_all(Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
@@ -311,6 +330,9 @@ compute_a_state = @(Rg,Rq,Om,w) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,
 % differential flatness
 compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(1),x_dd_des(2),x_dd_des(3));
 compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
+
+compute_L_state = @(Rg,Rq) compute_L_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3));
+compute_o_state = @(Rg, Rq, w, x_dd_des, x_ddd_des) compute_o_all(Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(2,1),Rq(2,2),Rq(3,1),Rq(3,2),g_,w(1),w(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3));
 
 %% ode45 Interface
 

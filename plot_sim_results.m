@@ -72,7 +72,12 @@ if(show_profile_plots)
     ylabel('velocity [m/s]')
     
     subplot(4,2,5);
-    plot(ts,state(:,25),ts,state(:,26),ts,state(:,27));
+    cla;
+    hold on;
+    plot(ts,state(:,25),'r',ts,state(:,26),'g',ts,state(:,27),'b');
+    plot(ts,Om_rec(1,:),'r--',ts,Om_rec(2,:),'g--',ts,Om_rec(3,:),'b--');
+    hold off;
+    
     title('quad angular velocity');
     ylabel('velocity [1/s]')
     
