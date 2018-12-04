@@ -4,16 +4,19 @@
 
 t = segment_dt*j;
 
-if(nargin(angular_derivatives) > 0)
-    angular = angular_derivatives(t);
-else
-    angular = angular_derivatives();
-end
-if(nargin(desired_orientation) > 0)
-    Rg_des = desired_orientation(t); 
-else
-    Rg_des = desired_orientation();
-end
+% if(nargin(angular_derivatives) > 0)
+%     angular = angular_derivatives(t);
+% else
+%     angular = angular_derivatives();
+% end
+% if(nargin(desired_orientation) > 0)
+%     Rg_des = desired_orientation(t); 
+% else
+%     Rg_des = desired_orientation();
+% end
+
+angular = compute_angular_des(trajectory.a,trajectory.b,trajectory.g,t,total_dt);
+Rg_des = compute_Rg_des(trajectory.a,trajectory.b,trajectory.g,t,total_dt);
 
 w_des     = angular(1,:).';
 w_d_des   = angular(2,:).';
@@ -58,9 +61,13 @@ xs_rec(4:6,j) = xs_d_des;
 % record angular trajectories for visualization
 w_rec(:,j) = w_des;
 
+
+Om_des = Om;
+Rq_des = Rq;
+
 % find angular acceleration of quadrotor body
-F = compute_F_state(Rg, Rq,xs_dd_des);
-d = compute_d_state(Rg_des,Rq,Om,w_des,w_d_des,xs_dd_des,xs_ddd_des,xs_dddd_des);
+F = compute_F_state(Rg_des, Rq_des,xs_dd_des);
+d = compute_d_state(Rg_des,Rq_des,Om_des,w_des,w_d_des,xs_dd_des,xs_ddd_des,xs_dddd_des);
 
 % necessary due to numerical issues
 H = [F d];
@@ -73,6 +80,7 @@ REF = rref(H);
 Om_d_des = double(REF(1:3,4));
 
 
+
 %% Feedback Linearization
 
 acc_des = [xs_dd_des(3); Om_d_des; w_d_des];
@@ -82,15 +90,15 @@ acc_des = [xs_dd_des(3); Om_d_des; w_d_des];
 % inputs of the system
 M = [
   (mg_+mq_)   zeros(1,6);
-  zeros(6,1) compute_M_state(Rg,Rq);
+  zeros(6,1) compute_M_state(Rg_des,Rq_des);
 ];
 B = [
-    e3.'*(Rq*e3) zeros(1,5);
-    compute_B_state(Rg,Rq);
+    e3.'*(Rq_des*e3) zeros(1,5);
+    compute_B_state(Rg_des,Rq_des);
 ];
 a = [
     -(mg_+mq_)*g_;
-    compute_a_state(Rg,Rq,Om,w);
+    compute_a_state(Rg_des,Rq_des,Om_des,w_des);
 ];
 
 % M x'' = B u + a(x)

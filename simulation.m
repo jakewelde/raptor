@@ -5,52 +5,38 @@ Rg0 = axisangle(e2,pi/2); % arm downwards
 
 x0 = vector_from_state(...
     [0;0;Ls_],Rq0,Rg0,...
-    [0;0;0],[0;0;0],Rg0.'*[0;0;0]...
+    [0;0;0],[0;0;0],Rg0.'*[0;0;0],...
+    [-2;-2;-4],[1;1;10]...
 );
 
 %% Configure Simulation Parameters
 segment_dt = .0001;
-total_dt = .5;
+total_dt = 1;
 n = floor(total_dt/segment_dt);
 state = zeros(n,size(x0,1));
 state(1,:) = x0;
 current_state = x0;
 
 us = zeros(n,6);
-[xs, Rq, Rg, xs_d, Om, w] = state_from_vector(x0);
+[xs, Rq, Rg, xs_d, Om, w, xb, xb_d] = state_from_vector(x0);
 
 %% Plan Trajectory
 
 trajectory_planning;
 
-trajectory.x = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-trajectory.y = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-% trajectory.x = find_coefficients([0;0;0;0],[.1;0;0;0],total_dt);
-% trajectory.y = find_coefficients([0;0;0;0],[.05;0;0;0],total_dt);
-% trajectory.z = find_coefficients([0;0;0;0],[-.02;0;0;0],total_dt);
+%     trajectory.x = find_coefficients([0;0;0;0],[.25;0;0;0],total_dt);
+%     trajectory.y = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+%     trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+%  trajectory.roll = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+% trajectory.swing = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt);
+% trajectory.wrist = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 
-C_R = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt);
-C_S = find_coefficients([pi/2;0;0;0],[.9*pi/2;0;0;0],total_dt);
-C_W = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
-
-roll_derivatives = compute_derivatives(C_R,time,total_dt);
-swing_derivatives = compute_derivatives(C_S,time,total_dt);
-wrist_derivatives = compute_derivatives(C_W,time,total_dt);
-Rg_des = axisangle(e2,roll_derivatives(1))*axisangle(e2,swing_derivatives(1))*axisangle(e1,wrist_derivatives(1));
-
-w_des = unhat(Rg_des.' * diff(Rg_des,time));
-w_d_des = diff(w_des,time);
-w_dd_des = diff(w_d_des,time);
-w_ddd_des = diff(w_dd_des,time);
-
-desired_orientation = matlabFunction(Rg_des);
-angular_derivatives = matlabFunction([
-       w_des.';
-     w_d_des.';
-    w_dd_des.';
-   w_ddd_des.';
-]);
+    trajectory.x = find_coefficients([0;0;0;0],[.3;-.4;0;0],total_dt);
+    trajectory.y = find_coefficients([0;0;0;0],[0;.1;0;0],total_dt);
+    trajectory.z = find_coefficients([0;0;0;0],[-.2;.5;0;0],total_dt);
+ trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
+trajectory.b = find_coefficients([pi/2;0;0;0],[.9*pi/2;0;0;0],total_dt);
+trajectory.g = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
 
 %% Dynamic Simulation
 
@@ -87,7 +73,7 @@ for j=1:n
     Rg = U * V';
 
     % record state and control inputs for plotting
-    state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w);
+    state(j,:) = vector_from_state(xs, Rq, Rg, xs_d, Om, w, xb, xb_d);
     us(j,:) = u_ff.';
  
 end

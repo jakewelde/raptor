@@ -203,6 +203,77 @@ d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
 compute_F_all = matlabFunction(F);
 compute_d_all = matlabFunction(d);
 
+
+%% Euler Angle planning
+ 
+
+trajectory_planning;
+
+% order = 8;
+% syms t_f
+% C_R = sym('C_R',[order 1]);
+% C_S = sym('C_S',[order 1]);
+% C_W = sym('C_W',[order 1]);
+% syms t 
+% 
+% roll_derivatives = compute_derivatives(C_R,t,t_f);
+% swing_derivatives = compute_derivatives(C_S,t,t_f);
+% wrist_derivatives = compute_derivatives(C_W,t,t_f);
+
+syms alpha(t) beta(t) gamma(t)
+
+Rg_des = axisangle(e2,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
+w_des = unhat(Rg_des.' * diff(Rg_des,t));
+w_d_des = diff(w_des,t);
+w_dd_des = diff(w_d_des,t);
+w_ddd_des = diff(w_dd_des,t);
+
+angular_block = [
+       w_des.';
+     w_d_des.';
+    w_dd_des.';
+   w_ddd_des.';
+];
+
+syms a ad add addd adddd
+syms b bd bdd bddd bdddd
+syms c cd cdd cddd cdddd
+
+sym_derivatives = [
+    alpha  diff(alpha,t)  diff(alpha,t,2)  diff(alpha,t,3)  diff(alpha,t,4) 
+    beta  diff(beta,t)  diff(beta,t,2)  diff(beta,t,3)  diff(beta,t,4)
+    gamma  diff(gamma,t)  diff(gamma,t,2)  diff(gamma,t,3)  diff(gamma,t,4)
+];
+
+symbol_derivatives = [
+    a ad add addd adddd
+	b bd bdd bddd bdddd
+	c cd cdd cddd cdddd
+];
+
+substituted_block = simplify(subs(angular_block,sym_derivatives,symbol_derivatives));
+
+global compute_angular_derivatives compute_Rg_angles
+compute_angular_derivatives = matlabFunction(substituted_block);
+compute_Rg_angles = matlabFunction(simplify(subs(Rg_des,sym_derivatives,symbol_derivatives)));
+
+% Rg_des = axisangle(e2,roll_derivatives(1))*axisangle(e2,swing_derivatives(1))*axisangle(e1,wrist_derivatives(1));
+% 
+% w_d_des = diff(w_des,time);
+% w_dd_des = diff(w_d_des,time);
+% w_ddd_des = diff(w_dd_des,time);
+% 
+% desired_orientation = matlabFunction(Rg_des);
+% angular_derivatives = matlabFunction([
+%        w_des.';
+%      w_d_des.';
+%     w_dd_des.';
+%    w_ddd_des.';
+% ]);
+% 
+% compute_Rg_des = @(C_R, C_S, C_W, t, t_f) desired_orientation(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
+% compute_angulars_des = @(C_R, C_S, C_W, t, t_f) angular_derivatives(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
+
 %% Numerical Physical Parameters
 
 global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  mq_ mg_ Lg_ Le_ g_ Ls_
@@ -218,11 +289,11 @@ Jgy_ = .001; % [kg*m^2]
 Jgz_ = .001; % [kg*m^2]
 
 mq_ = .5;  % [kg] quad mass
-mg_ = .5; % [kg] gripper mass
+mg_ = .15; % [kg] gripper mass
 Lg_ = .5;  % [m] distance from center of actuation to gripper COM
 Le_ = .6;  % [m] distance from center of actuation to end effector
 
-g_ = 10; % [m/s^2] acceleration due to gravity
+g_ = 9.81; % [m/s^2] acceleration due to gravity
 
 Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 
@@ -250,7 +321,7 @@ compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(
 % provide to MATLAB ode solver.
 
 % derivative of center of mass position is center of mass velocity
-velocity_cascade = zeros(3,(3+9+9+3+3+3));
+velocity_cascade = zeros(3,(3+9+9+3+3+3+6));
 velocity_cascade(1:3,3+9+9+(1:3)) = eye(3);
 
 ode = @(x,u) [
@@ -258,7 +329,9 @@ ode = @(x,u) [
   reshape(sp(x(4:(4+8)),hat(x(25:27))),[9 1]); % d/dt Rq = Rq Om_hat
   reshape(sp(x(13:(13+8)),hat(x(28:30))),[9 1]); % d/dt Rg = Rg w_hat
   u(1)/(mg_+mq_)*sp(x(4:(4+8)),e3) - g_*e3; % acceleration of system center of mass is due to gravity and thrust
-  compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)))
+  compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)));
+  x(34:36);
+  0;0;-g_;
 ];
 
 % x = [x_s; Rq; Rg; xs_d; Om; w]

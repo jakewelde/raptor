@@ -18,6 +18,7 @@ derivative_function = matlabFunction(derivative_matrix);
 dimensionalize = @(t_f,vector) diag((1/t_f).^(0:size(vector,1)-1))*vector;
 nondimensionalize = @(t_f,vector) diag((t_f).^(0:size(vector,1)-1))*vector;
 
+global compute_derivatives
 compute_derivatives = @(c,t,t_f) dimensionalize(t_f,derivative_function(t/t_f)*c);
 
 find_coefficients = @(init_state,final_state,t_f) D*[nondimensionalize(t_f,init_state); nondimensionalize(t_f,final_state)];

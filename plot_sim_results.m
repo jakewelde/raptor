@@ -127,7 +127,7 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 100;
+step = 500;
 for range=[1:step:n n]
     [az,el]=view;
     cla;
