@@ -10,7 +10,7 @@ x0 = vector_from_state(...
 
 %% Configure Simulation Parameters
 segment_dt = .0001;
-total_dt = 1;
+total_dt = 1.5;
 n = floor(total_dt/segment_dt);
 state = zeros(n,size(x0,1));
 state(1,:) = x0;
@@ -51,9 +51,9 @@ trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 % trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],total_dt);
 % trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],total_dt);
 
-trajectory.a = find_coefficients([0;0;0;0],[pi/6;-pi/8;0;0],total_dt); 
-trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;3;0;0],total_dt);
-trajectory.g = find_coefficients([0;0;0;0],[pi/8;0;0;0],total_dt);
+trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
+trajectory.b = find_coefficients([pi/2;0;0;0],[pi/6;0;0;0],total_dt);
+trajectory.g = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt);
 % trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
 % trajectory.b = find_coefficients([pi/2;0;0;0],[pi/7;0;0;0],total_dt);
 % trajectory.g = find_coefficients([0;0;0;0],[pi/2;0;0;0],total_dt);
