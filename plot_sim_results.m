@@ -143,11 +143,17 @@ for range=[1:step:n n]
     plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.','MarkerSize',15,'color',[.9 .2 .6])
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'color',[.9 .2 .6])
     plot3(ball_position(1,pts),ball_position(2,pts),ball_position(3,pts),'k');
+    plot3(ball_position(1,pts(end)),ball_position(2,pts(end)),ball_position(3,pts(end)),...
+        'o','MarkerEdgeColor','k',...
+        'MarkerFaceColor','k',...
+        'MarkerSize',6);
+    plot3(z_apex(1),z_apex(2),z_apex(3),'rx');
 
     draw_robot(state(range,:));
     axis equal    
 %     bounds = [min([(min(state(:,1:3))-3*Lg_).'  min(ball_position.').']); max([(max(state(:,1:3))+3*Lg_).'   max(ball_position.').'])];
-    bounds = [min([state(:,1:3)-3*Lg_;ball_position.']); max([state(:,1:3)+3*Lg_;ball_position.'])];
+    bounds = [min(state(:,1:3)-3*Lg_); max(state(:,1:3)+3*Lg_)];
+%     bounds = [min([state(:,1:3)-3*Lg_;ball_position.']); max([state(:,1:3)+3*Lg_;ball_position.'])];
     axis(bounds(:));
     xlabel('x');
     ylabel('y');

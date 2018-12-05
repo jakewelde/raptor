@@ -22,3 +22,7 @@ global compute_derivatives
 compute_derivatives = @(c,t,t_f) dimensionalize(t_f,derivative_function(t/t_f)*c);
 
 find_coefficients = @(init_state,final_state,t_f) D*[nondimensionalize(t_f,init_state); nondimensionalize(t_f,final_state)];
+% find_coefficients_intermediate = @(init_state,crit_state,t_crit,t_f) double([
+%     subs(derivative_matrix(1:4,:),time,0);
+%     subs(derivative_matrix(1:4,:),time,t_crit);
+% ]*[nondimensionalize(t_f,init_state); nondimensionalize(t_f,crit_state)]);

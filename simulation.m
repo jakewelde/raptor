@@ -22,12 +22,16 @@ us = zeros(n,6);
 
 %% Ball trajectory
 
-z0 = [-.5; 0; -4; .5; -.7; 8];
+z0 = [-.5; 0; -9; .5; -.7; 13];
 
 ball_position = zeros(3,n);
 ball_velocity = zeros(3,n);
 
 time = 0:segment_dt:total_dt;
+
+t_apex = z0(6)/g_;
+z_apex = z0(1:3) + z0(4:6)*t_apex - 1/2*g_*t_apex^2*e3;
+z_d_apex = z0(4:6) - g_*t_apex*e3;
 
 for i=1:size(time,2)
    t = time(i);
@@ -37,17 +41,41 @@ end
 
 %% Plan Trajectory
 
-trajectory.x = find_coefficients([0;0;0;0],[.3;-.4;0;0],total_dt);
-trajectory.y = find_coefficients([0;0;0;0],[0;.1;0;0],total_dt);
-trajectory.z = find_coefficients([0;0;0;0],[-.2;.5;0;0],total_dt);
-trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
-trajectory.b = find_coefficients([pi/2;0;0;0],[.9*pi/2;0;0;0],total_dt);
-trajectory.g = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
+% trajectory.x = find_coefficients_intermediate([0;0;0;0],[z_apex(1);z_d_apex(1);0;0],t_apex,total_dt);
+% trajectory.y = find_coefficients_intermediate([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],t_apex,total_dt);
+% trajectory.z = find_coefficients_intermediate([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],t_apex,total_dt);
+trajectory.x = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.y = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+% trajectory.x = find_coefficients([0;0;0;0],[z_apex(1);z_d_apex(1);0;0],total_dt);
+% trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],total_dt);
+% trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],total_dt);
+
+trajectory.a = find_coefficients([0;0;0;0],[pi/6;-pi/8;0;0],total_dt); 
+trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;3;0;0],total_dt);
+trajectory.g = find_coefficients([0;0;0;0],[pi/8;0;0;0],total_dt);
+% trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
+% trajectory.b = find_coefficients([pi/2;0;0;0],[pi/7;0;0;0],total_dt);
+% trajectory.g = find_coefficients([0;0;0;0],[pi/2;0;0;0],total_dt);
 
 stacked = [
     trajectory.x; trajectory.y; trajectory.z;
     trajectory.a; trajectory.b; trajectory.g;
-];    
+];
+
+figure(3)
+clf;
+names = {'x','y','z','\alpha','\beta','\gamma'};
+for coord=1:6
+    derivatives = zeros(5,n);
+    for i=1:n
+        derivatives(:,i) = compute_derivatives(stacked((coord-1)*8+(1:8)),i*segment_dt,total_dt);
+    end
+    subplot(2,3,coord);
+    plot(segment_dt*(1:n),derivatives.')
+    title(names{coord});
+end
+drawnow;
 
 %% Dynamic Simulation
 
@@ -58,6 +86,8 @@ w_rec = zeros(3,n);  % records the planned gripper ang. vel
 Om_rec = zeros(3,n); % records the ang. vel. computed with diff. flatness
 
 percent_done = -1;
+
+options = odeset('AbsTol',1e-8,'RelTol',1e-4, 'MaxStep',0.00001);
 
 for j=1:n
     
@@ -77,7 +107,7 @@ for j=1:n
     
     % integrate dynamics 
     tspan=segment_dt*(j-1)+[0 segment_dt];
-    [~,qs] = ode45(@(t,x) ode(x,u_ff),tspan,current_state);   
+    [~,qs] = ode45(@(t,x) ode(x,u_ff),tspan,current_state,options);   
     current_state = qs(end,:)';
     
     % reorthonormalize rotation matrices (project back onto manifold)
