@@ -1,10 +1,13 @@
 %% Set Initial Conditions
+% 
+Rq0 = axisangle(e3,.1); % hover 
+Rg0 = axisangle(e3,.1)*axisangle(e2,pi/2); % arm downwards
 
-Rq0 = eye(3); % hover 
-Rg0 = axisangle(e2,pi/2); % arm downwards
+% Rq0 = eye(3); % hover 
+% Rg0 = axisangle(e2,pi/2); % arm downwards
 
 x0 = vector_from_state(...
-    [0;0;Ls_+.1],Rq0,Rg0,...
+    [0;0;Ls_-.1],Rq0,Rg0,...
     [0;0;0],[0;0;0],Rg0.'*[0;0;0]...
 );
 
@@ -46,13 +49,13 @@ end
 % trajectory.z = find_coefficients_intermediate([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],t_apex,total_dt);
 trajectory.x = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 trajectory.y = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.z = find_coefficients([0;0;0;0],[0.05;0;0;0],total_dt);
 % trajectory.x = find_coefficients([0;0;0;0],[z_apex(1);z_d_apex(1);0;0],total_dt);
 % trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],total_dt);
 % trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],total_dt);
 
 trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
-trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt);
+trajectory.b = find_coefficients([pi/2;0;0;0],[.95*pi/2;0;0;0],total_dt);
 trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 % trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
 % trajectory.b = find_coefficients([pi/2;0;0;0],[pi/7;0;0;0],total_dt);

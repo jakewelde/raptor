@@ -56,11 +56,11 @@ if(show_profile_plots)
     subplot(4,2,1);
     cla;
     hold on;
-    plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
-    plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
-%     plot(ts,state(:,1).'-xs_rec(1,:),'r',ts,state(:,2).'-xs_rec(2,:),'g',ts,state(:,3).'-xs_rec(3,:),'b');
+%     plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
+%     plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
+    plot(ts,state(:,1).'-xs_rec(1,:),'r',ts,state(:,2).'-xs_rec(2,:),'g',ts,state(:,3).'-xs_rec(3,:),'b');
     hold off;
-    title('system center of mass position');
+    title('system center of mass error');
     ylabel('position [m]')
     
     subplot(4,2,3);
@@ -94,11 +94,11 @@ if(show_profile_plots)
     subplot(4,2,2);
     cla;
     hold on;
-    plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
-    plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
-%     plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
+%     plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
+%     plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
+    plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
     hold off;
-    title('end effector position in world');
+    title('end effector error in world');
     ylabel('position [m]')
 
     subplot(4,2,4);
@@ -127,15 +127,17 @@ end
 shg;
 drawnow;
 
+
 %% Visualize Robot
 
-return;
+
+
 figure(1)
 if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 1;
+step = 10;
 for range=[1:step:n n]
     [az,el]=view;
     cla;

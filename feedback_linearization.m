@@ -4,6 +4,7 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
 
     global mg_ mq_ g_
     global compute_M_state compute_B_state compute_a_state
+    global hat unhat
 
     % Feedback Linearization
 
@@ -66,41 +67,48 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
         xe = [
           (Rq*e3).'*(xs - xs_des);
           (Rq*e3).'*(xs_d - xs_d_des);
-          zeros(3,1); % body rotation error   
-          zeros(3,1); % gripper rotation error   
-          Om - Om_des;
-          w - w_des
+          1/2*unhat(Rq_des.'*Rq - Rq.'*Rq_des); % body rotation error   
+          Om - Rq.'*Rq_des*Om_des;
+          1/2*unhat(Rg_des.'*Rg - Rg.'*Rg_des); % gripper rotation error   
+          w - Rg.'*Rg_des*w_des;
         ];
 
-%     end
+    %     end
 %     -4*sqrt(1e17)
-    Kp = 90;
-    Kd = 2*sqrt(Kp);
-    K = -[
-%         [-1e17 -2*sqrt(1e17) zeros(1,12)];
-        [Kp Kd zeros(1,12)];
-        zeros(6,14)
-    ];
-%     disp((M*K*xe).')
+    Kx = 1e4;
+    Kv = 2*sqrt(Kx);
 
-%         -eye(3) -eye(3) zeros(3,6);
-%         zeros(3,6) -eye(3) -eye(3)
+    Krq = 5e5;
+    KOm = 2*sqrt(Krq);
+    Krg = 5e5;
+    Kw = 2*sqrt(Krq);
+    K = -[
+        Kx  Kv  0   0   0   0   0   0   0   0   0   0   0   0;
+        0   0   Krq 0   0   KOm 0   0   0   0   0   0   0   0;
+        0   0   0   Krq 0   0   KOm 0   0   0   0   0   0   0;
+        0   0   0   0   Krq 0   0   KOm 0   0   0   0   0   0;
+        0   0   0   0   0   0   0   0   Krg 0   0   Kw  0   0;
+        0   0   0   0   0   0   0   0   0   Krg 0   0   Kw  0;
+        0   0   0   0   0   0   0   0   0   0   Krg 0   0   Kw;
+    ];
+
 
 %     G = [B (- a + M*(acc_des))];
-%     B \ M*K*xe
+
     G = [B (- a + M*(acc_des + K*xe))];
     [U,S,V] = svd(G);
     
     % necessary due to numerical issues
     if(S(end) ~= 0)
+        if(S(1)/S(end) < 1e5)
+            throw(MException('ConstraintException', ...
+        'Feedback linearization nonsingular, singular value ratio equals',S(1)/S(end)));
+        end
         S(end) = 0;
         G = U*S*V.';
     end
     REF = rref(G);
     
     u = double(REF(1:6,7));  
-%     disp([1 zeros(1,6)]*(M*K*xe));
-%     disp(u(1)-g_*(mg_+mq_));
-%     disp([rank(M) rank(B) size(B)])
     
 end
