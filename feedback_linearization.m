@@ -95,6 +95,8 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
 
 %     G = [B (- a + M*(acc_des))];
 
+%     G = B*u == (- a + M*(acc_des + K*xe));
+    
     G = [B (- a + M*(acc_des + K*xe))];
     [U,S,V] = svd(G);
     

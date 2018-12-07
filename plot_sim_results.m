@@ -94,9 +94,9 @@ if(show_profile_plots)
     subplot(4,2,2);
     cla;
     hold on;
-%     plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
-%     plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
-    plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
+    plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
+    plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
+%     plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
     hold off;
     title('end effector error in world');
     ylabel('position [m]')
@@ -137,7 +137,7 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 10;
+step = 900;
 for range=[1:step:n n]
     [az,el]=view;
     cla;
@@ -147,6 +147,7 @@ for range=[1:step:n n]
     pts = [1:d_trail:range range];
     plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.','MarkerSize',15,'color',[.9 .2 .6])
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'color',[.9 .2 .6])
+    plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'color',[.9 .2 .6])
     plot3(ball_position(1,pts),ball_position(2,pts),ball_position(3,pts),'k');
     plot3(ball_position(1,pts(end)),ball_position(2,pts(end)),ball_position(3,pts(end)),...
         'o','MarkerEdgeColor','k',...
