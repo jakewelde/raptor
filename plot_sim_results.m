@@ -66,8 +66,9 @@ if(show_profile_plots)
     subplot(4,2,3);
     cla;
     hold on;
-    plot(ts,state(:,22),'r',ts,state(:,23),'g',ts,state(:,24),'b');
-    plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
+%     plot(ts,state(:,22),'r',ts,state(:,23),'g',ts,state(:,24),'b');
+%     plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
+    plot(ts,state(:,22).'-xs_rec(4,:),'r',ts,state(:,23).'-xs_rec(5,:),'g',ts,state(:,24).'-xs_rec(6,:),'b');
     hold off;
     title('system center of mass velocity');
     ylabel('velocity [m/s]')
@@ -75,28 +76,30 @@ if(show_profile_plots)
     subplot(4,2,5);
     cla;
     hold on;
-    plot(ts,state(:,25),'r',ts,state(:,26),'g',ts,state(:,27),'b');
-    plot(ts,Om_rec(1,:),'r--',ts,Om_rec(2,:),'g--',ts,Om_rec(3,:),'b--');
+%     plot(ts,state(:,25),'r',ts,state(:,26),'g',ts,state(:,27),'b');
+%     plot(ts,Om_rec(1,:),'r--',ts,Om_rec(2,:),'g--',ts,Om_rec(3,:),'b--');
+    plot(ts,state(:,25).'-Om_rec(1,:),'r',ts,state(:,26).'-Om_rec(2,:),'g',ts,state(:,27).'-Om_rec(3,:),'b');
     hold off;
     
-    title('quad angular velocity');
+    title('quad angular velocity error');
     ylabel('velocity [1/s]')
     
     subplot(4,2,7);
     cla;
     hold on;
-    plot(ts,state(:,28),'r',ts,state(:,29),'g',ts,state(:,30),'b');
-    plot(ts,w_rec(1,:),'r--',ts,w_rec(2,:),'g--',ts,w_rec(3,:),'b--');
+%     plot(ts,state(:,28),'r',ts,state(:,29),'g',ts,state(:,30),'b');
+%     plot(ts,w_rec(1,:),'r--',ts,w_rec(2,:),'g--',ts,w_rec(3,:),'b--');
+    plot(ts,state(:,28).'-w_rec(1,:),'r',ts,state(:,29).'-w_rec(2,:),'g',ts,state(:,30).'-w_rec(3,:),'b');
     hold off;
-    title('gripper angular velocity');
+    title('gripper angular velocity error');
     ylabel('velocity [1/s]')
 
     subplot(4,2,2);
     cla;
     hold on;
-    plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
-    plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
-%     plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
+%     plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
+%     plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
+    plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
     hold off;
     title('end effector error in world');
     ylabel('position [m]')
@@ -104,8 +107,9 @@ if(show_profile_plots)
     subplot(4,2,4);
     cla;
     hold on;
-    plot(ts,ve(:,1),'r',ts,ve(:,2),'g',ts,ve(:,3),'b');
-    plot(ts,xe_rec(4,:),'r--',ts,xe_rec(5,:),'g--',ts,xe_rec(6,:),'b--');
+%     plot(ts,ve(:,1),'r',ts,ve(:,2),'g',ts,ve(:,3),'b');
+%     plot(ts,xe_rec(4,:),'r--',ts,xe_rec(5,:),'g--',ts,xe_rec(6,:),'b--');
+    plot(ts,ve(:,1).'-xe_rec(4,:),'r',ts,ve(:,2).'-xe_rec(5,:),'g',ts,ve(:,3).'-xe_rec(6,:),'b');
     hold off;
     title('end effector velocity in world');
     ylabel('velocity [m/s]')

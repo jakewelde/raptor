@@ -10,22 +10,22 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
 
     [xs, Rq, Rg, xs_d, Om, w] = state_from_vector(state);
 
-    acc_des = [(Rq*e3).'*xs_dd_des; Om_d_des; w_d_des];
+    acc_nominal = [(Rq_des*e3).'*xs_dd_des; Om_d_des; w_d_des];
 
     % Compute numerical function that represents the evolution of the system's
     % state at the current point in state space, but is still a function of the
     % inputs of the system
     M = [
       (mg_+mq_)   zeros(1,6);
-      zeros(6,1) compute_M_state(Rg,Rq);
+      zeros(6,1) compute_M_state(Rg_des,Rq_des);
     ];
     B = [
         1 zeros(1,5);
-        compute_B_state(Rg,Rq);
+        compute_B_state(Rg_des,Rq_des);
     ];
     a = [
-        (Rq*e3).'*(-(mg_+mq_)*g_*e3);
-        compute_a_state(Rg,Rq,Om,w);
+        (Rq_des*e3).'*(-(mg_+mq_)*g_*e3);
+        compute_a_state(Rg_des,Rq_des,Om_des,w_des);
     ];
 
     % M x'' = B u + a(x)
@@ -65,8 +65,8 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
 %     else
         [~,~,~,~,Om,w] = state_from_vector(state);
         xe = [
-          (Rq*e3).'*(xs - xs_des);
-          (Rq*e3).'*(xs_d - xs_d_des);
+          (Rq_des*e3).'*(xs - xs_des);
+          (Rq_des*e3).'*(xs_d - xs_d_des);
           1/2*unhat(Rq_des.'*Rq - Rq.'*Rq_des); % body rotation error   
           Om - Rq.'*Rq_des*Om_des;
           1/2*unhat(Rg_des.'*Rg - Rg.'*Rg_des); % gripper rotation error   
@@ -97,12 +97,38 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
 
 %     G = B*u == (- a + M*(acc_des + K*xe));
     
-    G = [B (- a + M*(acc_des + K*xe))];
+    
+
+    acc_feedback = K*xe;
+    
+    acc_des = acc_nominal + acc_feedback;
+
+    
+%     constr =  M(5,5:7)*[wd1;wd2;wd3] = a(5) - M(5,1:4)*acc_des(1:4); % == 0
+%     wd_candidate = acc_des(5:7);
+%     zeroed = wd_candidate - (a(5) - M(5,1:4)*acc_des(1:4))
+%     acc_des(5:7) = zeroed - M(5,5:7)*zeroed
+%     double(subs(constr,[wd1;wd2;wd3],acc_feedback(5:7)))
+    
+    % Make this comply with constraints
+    
+    
+
+    G = [B (- a + M*(acc_des))];
     [U,S,V] = svd(G);
     
     % necessary due to numerical issues
     if(S(end) ~= 0)
         if(S(1)/S(end) < 1e5)
+            
+                G = [B (- a + M*(acc_nominal))];
+                [U,S,V] = svd(G);
+        disp(S(1)/S(end))
+        
+                        G = [B (- a + M*(K*xe))];
+                [U,S,V] = svd(G);
+        disp(S(1)/S(end))
+                
             throw(MException('ConstraintException', ...
         'Feedback linearization nonsingular, singular value ratio equals',S(1)/S(end)));
         end
