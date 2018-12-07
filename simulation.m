@@ -4,13 +4,13 @@ Rq0 = eye(3); % hover
 Rg0 = axisangle(e2,pi/2); % arm downwards
 
 x0 = vector_from_state(...
-    [0;0;Ls_],Rq0,Rg0,...
+    [0;0;Ls_+.1],Rq0,Rg0,...
     [0;0;0],[0;0;0],Rg0.'*[0;0;0]...
 );
 
 %% Configure Simulation Parameters
-segment_dt = .0001;
-total_dt = 1.5;
+segment_dt = .001;
+total_dt = 1;
 n = floor(total_dt/segment_dt);
 state = zeros(n,size(x0,1));
 state(1,:) = x0;
@@ -52,8 +52,8 @@ trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 % trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],total_dt);
 
 trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
-trajectory.b = find_coefficients([pi/2;0;0;0],[pi/6;0;0;0],total_dt);
-trajectory.g = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt);
+trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt);
+trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 % trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
 % trajectory.b = find_coefficients([pi/2;0;0;0],[pi/7;0;0;0],total_dt);
 % trajectory.g = find_coefficients([0;0;0;0],[pi/2;0;0;0],total_dt);
@@ -63,19 +63,19 @@ stacked = [
     trajectory.a; trajectory.b; trajectory.g;
 ];
 
-figure(3)
-clf;
-names = {'x','y','z','\alpha','\beta','\gamma'};
-for coord=1:6
-    derivatives = zeros(5,n);
-    for i=1:n
-        derivatives(:,i) = compute_derivatives(stacked((coord-1)*8+(1:8)),i*segment_dt,total_dt);
-    end
-    subplot(2,3,coord);
-    plot(segment_dt*(1:n),derivatives.')
-    title(names{coord});
-end
-drawnow;
+% figure(3)
+% clf;
+% names = {'x','y','z','\alpha','\beta','\gamma'};
+% for coord=1:6
+%     derivatives = zeros(5,n);
+%     for i=1:n
+%         derivatives(:,i) = compute_derivatives(stacked((coord-1)*8+(1:8)),i*segment_dt,total_dt);
+%     end
+%     subplot(2,3,coord);
+%     plot(segment_dt*(1:n),derivatives.')
+%     title(names{coord});
+% end
+% drawnow;
 
 %% Dynamic Simulation
 
@@ -101,7 +101,7 @@ for j=1:n
     t = segment_dt * j;
     
     % compute feedforward control
-    [u_ff, xe_des, xs_des, w_des, Om_des] = compute_control(stacked, t, total_dt);
+    [u_ff, xe_des, xs_des, w_des, Om_des] = compute_control(stacked, t, total_dt,current_state);
 
     record_nominal_trajectory;
     

@@ -58,6 +58,7 @@ if(show_profile_plots)
     hold on;
     plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
     plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
+%     plot(ts,state(:,1).'-xs_rec(1,:),'r',ts,state(:,2).'-xs_rec(2,:),'g',ts,state(:,3).'-xs_rec(3,:),'b');
     hold off;
     title('system center of mass position');
     ylabel('position [m]')
@@ -95,6 +96,7 @@ if(show_profile_plots)
     hold on;
     plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
     plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
+%     plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
     hold off;
     title('end effector position in world');
     ylabel('position [m]')
@@ -127,12 +129,13 @@ drawnow;
 
 %% Visualize Robot
 
+return;
 figure(1)
 if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 500;
+step = 1;
 for range=[1:step:n n]
     [az,el]=view;
     cla;

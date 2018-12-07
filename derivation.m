@@ -238,7 +238,7 @@ trajectory_planning;
 
 syms alpha(t) beta(t) gamma(t)
 
-Rg_des = axisangle(e3,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
+Rg_des = axisangle(e2,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
 w_des = unhat(Rg_des.' * diff(Rg_des,t));
 w_d_des = diff(w_des,t);
 w_dd_des = diff(w_d_des,t);
