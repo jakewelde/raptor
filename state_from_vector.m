@@ -1,8 +1,10 @@
-function [xs, Rq, Rg, xs_d, Om, w] = state_from_vector(x)
+function [xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(x)
     xs = x(1:3);
-    Rq = reshape(x(4:4+8),[3,3]);
-    Rg = reshape(x(13:13+8),[3,3]);
-    xs_d = x(22:24);
-    Om = x(25:27);
-    w = x(28:30);
+    Rg = reshape(x(4:4+8),[3,3]);
+    th1 = x(13);
+    th2 = x(14);
+    xs_d = x(15:17);
+    w = x(18:20);
+    th1d = x(21);
+    th2d = x(22);
 end

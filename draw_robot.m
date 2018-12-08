@@ -1,13 +1,13 @@
 function draw_robot(state)
-    global mq_ mg_ Lg_ Le_ e1 e2 e3
-    Rq = reshape(state(1,4:12),[3 3]);
-    Rg = reshape(state(1,13:21),[3 3]);
-    xg = state(1:3).'+Lg_*mq_/(mg_+mq_)*Rg*e1;
+    global mq_ mg_ Lg_ Le_ e1
+    global compute_Rq_state
+    
+    [xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(state);
+    
+    Rq = compute_Rq_state(Rg,th1,th2);
+    xg = xs+Lg_*mq_/(mg_+mq_)*Rg*e1;
     xq = xg - Lg_*Rg*e1;
-
-    
-    
-    
+        
     
     
     coords = .5*[
@@ -59,16 +59,16 @@ function draw_robot(state)
 
     
     
-    quiver3(xq(1),xq(2),xq(3),state(4),state(5),state(6),'AutoScale','off','color',[1 0 0],'LineWidth',1.5,'MaxHeadSize',.25);
-    quiver3(xq(1),xq(2),xq(3),state(7),state(8),state(9),'AutoScale','off','color',[0 1 0],'LineWidth',1.5,'MaxHeadSize',.25);
-    quiver3(xq(1),xq(2),xq(3),state(10),state(11),state(12),'AutoScale','off','color',[0 0 1],'LineWidth',1.5,'MaxHeadSize',.25);
+    quiver3(xq(1),xq(2),xq(3),Rq(1,1),Rq(2,1),Rq(3,1),'AutoScale','off','color',[1 0 0],'LineWidth',1.5,'MaxHeadSize',.25);
+    quiver3(xq(1),xq(2),xq(3),Rq(1,2),Rq(2,2),Rq(3,2),'AutoScale','off','color',[0 1 0],'LineWidth',1.5,'MaxHeadSize',.25);
+    quiver3(xq(1),xq(2),xq(3),Rq(1,3),Rq(2,3),Rq(3,3),'AutoScale','off','color',[0 0 1],'LineWidth',1.5,'MaxHeadSize',.25);
 
-    state(13:21) = .5*state(13:21);
-    quiver3(xg(1),xg(2),xg(3),state(13),state(14),state(15),'AutoScale','off','color',[1 0 0],'LineWidth',1.5,'MaxHeadSize',.5);
-    quiver3(xg(1),xg(2),xg(3),state(16),state(17),state(18),'AutoScale','off','color',[0 1 0],'LineWidth',1.5,'MaxHeadSize',.5);
-    quiver3(xg(1),xg(2),xg(3),state(19),state(20),state(21),'AutoScale','off','color',[0 0 1],'LineWidth',1.5,'MaxHeadSize',.5);
+    Rg = 1/2*Rg; % visualization scaling
+    quiver3(xg(1),xg(2),xg(3),Rg(1,1),Rg(2,1),Rg(3,1),'AutoScale','off','color',[1 0 0],'LineWidth',1.5,'MaxHeadSize',.5);
+    quiver3(xg(1),xg(2),xg(3),Rg(1,2),Rg(2,2),Rg(3,2),'AutoScale','off','color',[0 1 0],'LineWidth',1.5,'MaxHeadSize',.5);
+    quiver3(xg(1),xg(2),xg(3),Rg(1,3),Rg(2,3),Rg(3,3),'AutoScale','off','color',[0 0 1],'LineWidth',1.5,'MaxHeadSize',.5);
 
-    plot3(state(1),state(2),state(3),'o',...
+    plot3(xs(1),xs(2),xs(3),'o',...
         'MarkerEdgeColor','k',...
         'MarkerFaceColor',[.8 .8 1],...
         'MarkerSize',7);

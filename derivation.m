@@ -27,6 +27,8 @@ clear;
 
 %% Model Parameters
 
+disp('Generating preliminaries...');
+
 syms Jqx Jqy Jqz Jgx Jgy Jgz;
 Jq = diag([Jqx Jqy Jqz]); % quad inertia
 Jg = diag([Jgx Jgy Jgz]); % gripper inertia
@@ -44,18 +46,23 @@ syms g;
 
 % POSITION
 xs = sym('xs',[3 1]); % position of center of mass
-Rq = sym('Rq',[3 3]); % rotation from quad to world
 Rg = sym('Rg',[3 3]); % rotation from gripper to world
+syms th1 th2          % joint angles
 
 % VELOCITY
 xs_d = sym('xs_d',[3 1]); % velocity of center of mass
-Om = sym('Om',[3 1]); % angular velocity of quadrotor body relative to world, expressed in quadrotor frame
-w = sym('w',[3 1]); % angular velocity of gripper relative to world, expressed in gripper frame
+w = sym('w',[3 1]);       % angular velocity of quadrotor body relative to world, expressed in quadrotor frame
+syms thd1 thd2            % joint velocities
 
 % ACCELERATION (not truly part of state but used below)
 xs_dd = sym('xs_dd',[3 1]); % acceleration of center of mass
-Om_d = sym('Om_d',[3 1]); % angular acceleration of quadrotor body relative to world, expressed in quadrotor frame
-w_d = sym('w_d',[3 1]); % angular acceleration of gripper relative to world, expressed in gripper frame
+w_d = sym('w_d',[3 1]);     % angular acceleration of quadrotor body relative to world, expressed in quadrotor frame
+syms thdd1 thdd2            % joint accelerations
+
+% Higher derivatives
+
+w_dd = sym('w_dd',[3 1]);
+w_ddd = sym('w_ddd',[3 1]);
 
 %% Control Inputs
 
@@ -79,6 +86,78 @@ e1 = [1; 0; 0];
 e2 = [0; 1; 0];
 e3 = [0; 0; 1];
 
+
+%% Derive angular kinematics for quad based on minimal state representation
+
+disp('Deriving angular quantities...');
+
+Rg_d = simplify(Rg*hat(w));
+Rg_dd = simplify(Rg_d*hat(w) + Rg*hat(w_d));
+Rg_ddd = simplify(Rg_dd*hat(w) + Rg_d*hat(w_d) + Rg_d*hat(w_d) + Rg*hat(w_dd));
+Rg_dddd = simplify(Rg_ddd*hat(w) + Rg_dd*hat(w_d) + ...
+2*(Rg_dd*hat(w_d) + Rg_d*hat(w_dd)) + ...
+Rg_d*hat(w_dd) + Rg*hat(w_ddd));
+
+syms angle1(t) angle2(t)
+
+Ra = axisangle(e2,angle2(t))*axisangle(e1,angle1(t));
+
+   Ra_d = simplify(diff(Ra,t));
+  Ra_dd = simplify(diff(Ra_d,t));
+ Ra_ddd = simplify(diff(Ra_dd,t));
+Ra_dddd = simplify(diff(Ra_ddd,t));
+
+syms th1 th2 
+syms th1d th2d 
+syms th1dd th2dd 
+syms th1ddd th2ddd 
+syms th1dddd th2dddd
+
+differential = [
+    angle1 angle2;
+    diff(angle1,t) diff(angle2,t);
+    diff(angle1,t,2) diff(angle2,t,2);
+    diff(angle1,t,3) diff(angle2,t,3);
+    diff(angle1,t,4) diff(angle2,t,4);
+];
+
+variant = [
+   th1 th2; 
+   th1d th2d;
+   th1dd th2dd;
+   th1ddd th2ddd;
+   th1dddd th2dddd;
+];
+
+     Ra = subs(Ra,differential,variant);
+   Ra_d = subs(Ra_d,differential,variant);
+  Ra_dd = subs(Ra_dd,differential,variant);
+
+Rq = Rg*Ra;
+
+Rq_d = Rg_d*Ra + Rg*Ra_d;
+
+Rq_dd = Rg_dd*Ra + 2*Rg_d*Ra_d + Rg*Ra_dd;
+
+Om_hat   = simplify(Rq.' * Rq_d);
+Om_d_hat = simplify(Rq_d.' * Rq_d + Rq.' * Rq_dd);
+
+Om = unhat(Om_hat);
+Om_d = unhat(Om_d_hat);
+
+% Are some of these useful? Unclear!
+
+compute_Rq_all = matlabFunction(Rq);
+compute_Om_all = matlabFunction(Om);
+compute_Om_d_all = matlabFunction(Om_d);
+
+global compute_Rq_state compute_Om_state compute_Om_d_state
+
+compute_Rq_state = @(Rg,th1,th2) compute_Rq_all(Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2);
+compute_Om_state = @(Rg,th1,th2,th1d,th2d,w) compute_Om_all(Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,th1d,th2d,w(1),w(2),w(3));
+compute_Om_d_state = @(Rg,th1,th2,th1d,th2d,th1dd,th2dd,w,w_d) compute_Om_d_all(Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,th1d,th2d,th1dd,th2dd,w(1),w(2),w(3),w_d(1),w_d(2),w_d(3));
+
+
 %% Kinematics
 
 r = -Lg*Rg*e1; % vector from gripper center of mass to center of actuation
@@ -96,39 +175,22 @@ xg_dd = xs_dd + Lg*mq/(mq+mg)*Rg*(hat(w)^2+hat(w_d))*e1; % acceleration kinemati
 Fr = mg*xg_dd + mg*g*e3; % solving sum of forces on gripper subsystem for the reaction force on the gripper in the world frame
 
 % Solve angular dynamics of the two bodies for the moments between them
-Mr_quad = Rg.'*Rq*(Mq - cross(Om,Jq*Om) - Jq*Om_d);
-Mr_gripper = Jg*w_d + cross(w,Jg*w)-Rg.'*cross(r,Fr);
+Mr_gripper = Rg*(Jg*w_d + cross(w,Jg*w))-cross(r,Fr);
+Mr_quad = Rq*(Mq - cross(Om,Jq*Om) - Jq*Om_d);
 
 % set these moments equal
-combination = Mr_quad - Mr_gripper; % == 0
-
-% massage this equation into the form Ax=b
-acc = [Om_d; w_d];
-top_3_rows = jacobian(combination, acc);
-top_affine_part = -simplify(combination - top_3_rows*acc);
-
-%% Kinematic Constraints
-
-% constraint on accelerations found by differentiating the constraint on
-% angular velocities due to missing degree of freedom between the bodies
-kinematic_constraint_exp = (cross(Rq*e1,Rg*hat(w)*e2)+cross(Rq*hat(Om)*e1,Rg*e2)).'*(Rg*w-Rq*Om)+cross(Rq*e1,Rg*e2).'*( Rg*hat(w)*w - Rq*hat(Om)*Om + Rg*w_d - Rq*Om_d ); % == 0;
-
-(cross(Rq*e1,Rg*hat(w)*e2)+cross(Rq*hat(Om)*e1,Rg*e2)).'*(Rg*w-Rq*Om)+cross(Rq*e1,Rg*e2).'*( Rg*hat(w)*w - Rq*hat(Om)*Om + Rg*w_d - Rq*Om_d ); % == 0;
-
-% torque between bodies projected onto actuator axes equals the torque
-% applied by those actuators
-torque_constraint_1_exp = (Rg*Mr_quad).'*Rq*e1 - T1; % == 0
-torque_constraint_2_exp = (Mr_quad).'*e2 - T2; % == 0
-
-K = [
- kinematic_constraint_exp;
- torque_constraint_1_exp;
- torque_constraint_2_exp;
+equations = [
+    Mr_quad - Mr_gripper; % == 0
+    (Rq*e1).'*(Mr_gripper) - T1 % == 0;
+    (Rg*e2).'*(Mr_gripper) - T2 % == 0;
 ];
 
-% massage this equation into the form Ax=b
-bottom_3_rows = jacobian(K, acc);
-bottom_affine_part = -simplify(expand(K) - expand(bottom_3_rows*acc));
+acc = [w_d; th1dd; th2dd];
+[M,affine] = equationsToMatrix(equations,acc);
+[B,a] = equationsToMatrix(affine,u);
+a = -a;
+
+% M(x) x' = a(x) + B(x) u
 
 %% Dynamics Solution 
 
@@ -136,18 +198,7 @@ bottom_affine_part = -simplify(expand(K) - expand(bottom_3_rows*acc));
 % different constraints on the angular accelerations, which should allow us
 % to solve for them.
 
-% M(x) x' = a(x) + B(x) u
 
-M = [
-  top_3_rows;
-  bottom_3_rows
-];
-affine = [
-  top_affine_part;
-  bottom_affine_part;
-];
-B = jacobian(affine,u);
-a = simplify(affine - B*u);
 
 % check that the dynamics are actually of the form necessary to use
 % jacobian() etc to massage the equations like we did above
@@ -176,123 +227,90 @@ compute_M_all = matlabFunction(M);
 compute_B_all = matlabFunction(B);
 compute_a_all = matlabFunction(a);
 
+return 
 %% Differential Flatness
 
-x_dd_des = sym('x_dd_des',[3 1]);
-x_ddd_des = sym('x_ddd_des',[3 1]);
-x_dddd_des = sym('x_dddd_des',[3 1]);
-
-thrust    = (Rq*e3).' * (mg+mq) * (x_dd_des + g*e3);
-thrust_d  = (Rq*e3).' * (mg+mq) * x_ddd_des;
-thrust_dd = (Rq*e3).' * (mg+mq) * x_dddd_des - thrust*e3.'*hat(Om)^2*e3;
-
-dynamics_thrust_constraint = ...
-     -(mg+mq) * x_dddd_des + ...
-       thrust * Rq * ( hat(Om_d) + hat(Om)^2 ) * e3 + ...
-     thrust_d * 2 * Rq * hat(Om) * e3  + ...
-    thrust_dd * Rq * e3; % == 0
-
-% F * Om_d_des - g = 0
-
-thrust_vectoring_constraints = [
-    kinematic_constraint_exp;
-    dynamics_thrust_constraint
-];
-
-F = simplify(jacobian(thrust_vectoring_constraints,Om_d));
-d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
-
-compute_F_all = matlabFunction(F);
-compute_d_all = matlabFunction(d);
-
-%% Angular for differential flatness
-
-quad_velocity_constraints = [
-    (Rq*Om - Rg*w).'*cross(Rg*e2,Rq*e1); % == 0
-    [e1.'; e2.'] * Om - 1 / (norm(x_dd_des+g*e3)) * [-(Rq*e2).'; (Rq*e1).']*x_ddd_des; % == 0 
-];
-
-% L Om = o
-
-L = simplify(jacobian(quad_velocity_constraints,Om));
-o = -simplify(expand(quad_velocity_constraints - L * Om));
-
-compute_L_all = matlabFunction(L);
-compute_o_all = matlabFunction(o);
+% x_dd_des = sym('x_dd_des',[3 1]);
+% x_ddd_des = sym('x_ddd_des',[3 1]);
+% x_dddd_des = sym('x_dddd_des',[3 1]);
+% 
+% thrust    = (Rq*e3).' * (mg+mq) * (x_dd_des + g*e3);
+% thrust_d  = (Rq*e3).' * (mg+mq) * x_ddd_des;
+% thrust_dd = (Rq*e3).' * (mg+mq) * x_dddd_des - thrust*e3.'*hat(Om)^2*e3;
+% 
+% dynamics_thrust_constraint = ...
+%      -(mg+mq) * x_dddd_des + ...
+%        thrust * Rq * ( hat(Om_d) + hat(Om)^2 ) * e3 + ...
+%      thrust_d * 2 * Rq * hat(Om) * e3  + ...
+%     thrust_dd * Rq * e3; % == 0
+% 
+% % F * Om_d_des - g = 0
+% 
+% thrust_vectoring_constraints = [
+%     kinematic_constraint_exp;
+%     dynamics_thrust_constraint
+% ];
+% 
+% F = simplify(jacobian(thrust_vectoring_constraints,Om_d));
+% d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
+% 
+% compute_F_all = matlabFunction(F);
+% compute_d_all = matlabFunction(d);
+% 
+% %% Angular for differential flatness
+% 
+% quad_velocity_constraints = [
+%     (Rq*Om - Rg*w).'*cross(Rg*e2,Rq*e1); % == 0
+%     [e1.'; e2.'] * Om - 1 / (norm(x_dd_des+g*e3)) * [-(Rq*e2).'; (Rq*e1).']*x_ddd_des; % == 0 
+% ];
+% 
+% % L Om = o
+% 
+% L = simplify(jacobian(quad_velocity_constraints,Om));
+% o = -simplify(expand(quad_velocity_constraints - L * Om));
+% 
+% compute_L_all = matlabFunction(L);
+% compute_o_all = matlabFunction(o);
 
 %% Euler Angle planning
  
-
 trajectory_planning;
 
-% order = 8;
-% syms t_f
-% C_R = sym('C_R',[order 1]);
-% C_S = sym('C_S',[order 1]);
-% C_W = sym('C_W',[order 1]);
-% syms t 
-% 
-% roll_derivatives = compute_derivatives(C_R,t,t_f);
-% swing_derivatives = compute_derivatives(C_S,t,t_f);
-% wrist_derivatives = compute_derivatives(C_W,t,t_f);
+order = 8;
+syms t_f
+C_R = sym('C_R',[order 1]);
+C_S = sym('C_S',[order 1]);
+C_W = sym('C_W',[order 1]);
+syms t 
 
-syms alpha(t) beta(t) gamma(t)
+roll_derivatives = compute_derivatives(C_R,t,t_f);
+swing_derivatives = compute_derivatives(C_S,t,t_f);
+wrist_derivatives = compute_derivatives(C_W,t,t_f);
 
-Rg_des = axisangle(e3,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
-w_des = unhat(Rg_des.' * diff(Rg_des,t));
-w_d_des = diff(w_des,t);
-w_dd_des = diff(w_d_des,t);
-w_ddd_des = diff(w_dd_des,t);
 
-angular_block = [
+Rg_des = axisangle(e2,roll_derivatives(1))*axisangle(e2,swing_derivatives(1))*axisangle(e1,wrist_derivatives(1));
+
+w_d_des = diff(w_des,time);
+w_dd_des = diff(w_d_des,time);
+w_ddd_des = diff(w_dd_des,time);
+
+desired_orientation = matlabFunction(Rg_des);
+angular_derivatives = matlabFunction([
        w_des.';
      w_d_des.';
     w_dd_des.';
    w_ddd_des.';
-];
+]);
 
-syms a ad add addd adddd
-syms b bd bdd bddd bdddd
-syms c cd cdd cddd cdddd
-
-sym_derivatives = [
-    alpha  diff(alpha,t)  diff(alpha,t,2)  diff(alpha,t,3)  diff(alpha,t,4) 
-    beta  diff(beta,t)  diff(beta,t,2)  diff(beta,t,3)  diff(beta,t,4)
-    gamma  diff(gamma,t)  diff(gamma,t,2)  diff(gamma,t,3)  diff(gamma,t,4)
-];
-
-symbol_derivatives = [
-    a ad add addd adddd
-	b bd bdd bddd bdddd
-	c cd cdd cddd cdddd
-];
-
-substituted_block = simplify(subs(angular_block,sym_derivatives,symbol_derivatives));
-
-global compute_angular_derivatives compute_Rg_angles
-compute_angular_derivatives = matlabFunction(substituted_block);
-compute_Rg_angles = matlabFunction(simplify(subs(Rg_des,sym_derivatives,symbol_derivatives)));
-
-% Rg_des = axisangle(e2,roll_derivatives(1))*axisangle(e2,swing_derivatives(1))*axisangle(e1,wrist_derivatives(1));
-% 
-% w_d_des = diff(w_des,time);
-% w_dd_des = diff(w_d_des,time);
-% w_ddd_des = diff(w_dd_des,time);
-% 
-% desired_orientation = matlabFunction(Rg_des);
-% angular_derivatives = matlabFunction([
-%        w_des.';
-%      w_d_des.';
-%     w_dd_des.';
-%    w_ddd_des.';
-% ]);
-% 
-% compute_Rg_des = @(C_R, C_S, C_W, t, t_f) desired_orientation(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
-% compute_angulars_des = @(C_R, C_S, C_W, t, t_f) angular_derivatives(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
+compute_Rg_des = @(C_R, C_S, C_W, t, t_f) desired_orientation(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
+compute_angulars_des = @(C_R, C_S, C_W, t, t_f) angular_derivatives(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
 
 %% Numerical Physical Parameters
 
-global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  mq_ mg_ Lg_ Le_ g_ Ls_
+global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_  
+global Jq_ Jg_
+global mq_ mg_ g_
+global Lg_ Le_ Ls_
 
 % Quad Inertia
 Jqx_ = .001; % [kg*m^2]
@@ -313,6 +331,9 @@ g_ = 9.81; % [m/s^2] acceleration due to gravity
 
 Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 
+Jq_ = diag([Jqx_ Jqy_ Jqz_]); % quad inertia
+Jg_ = diag([Jgx_ Jgy_ Jgz_]); % gripper inertia
+
 %% Function Parameter Substitution
 
 % Substitute physical parameters of the robot into the functions we are
@@ -320,19 +341,19 @@ Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 % to supply these parameters every time we call the functions.
 
 global compute_M_state compute_B_state compute_a_state
-global compute_F_state compute_d_state compute_L_state compute_o_state
+% global compute_F_state compute_d_state compute_L_state compute_o_state
 
 % dynamics
-compute_M_state = @(Rg,Rq) compute_M_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
-compute_B_state = @(Rg,Rq) compute_B_all(Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_);
-compute_a_state = @(Rg,Rq,Om,w) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),mg_,mq_,w(1),w(2),w(3));
+compute_M_state = @(Rg,th1,th2) compute_M_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),mg_,mq_,th1,th2);
+compute_B_state = @(Rg,th1,th2) compute_B_all(Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),mg_,mq_,th1,th2);
+compute_a_state = @(Rg,w,th1,th2,th1d,th2d) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),g_,mg_,mq_,th1,th2,th1d,th2d,w(1),w(2),w(3));
 
-% differential flatness
-compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(1),x_dd_des(2),x_dd_des(3));
-compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
-
-compute_L_state = @(Rg,Rq) compute_L_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3));
-compute_o_state = @(Rg, Rq, w, x_dd_des, x_ddd_des) compute_o_all(Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(2,1),Rq(2,2),Rq(3,1),Rq(3,2),g_,w(1),w(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3));
+% % differential flatness
+% compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(1),x_dd_des(2),x_dd_des(3));
+% compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
+% 
+% compute_L_state = @(Rg,Rq) compute_L_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3));
+% compute_o_state = @(Rg, Rq, w, x_dd_des, x_ddd_des) compute_o_all(Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(2,1),Rq(2,2),Rq(3,1),Rq(3,2),g_,w(1),w(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3));
 
 %% ode45 Interface
 
@@ -343,15 +364,12 @@ compute_o_state = @(Rg, Rq, w, x_dd_des, x_ddd_des) compute_o_all(Rg(1,1),Rg(1,2
 % provide to MATLAB ode solver.
 
 % derivative of center of mass position is center of mass velocity
-velocity_cascade = zeros(3,(3+9+9+3+3+3));
-velocity_cascade(1:3,3+9+9+(1:3)) = eye(3);
 
-ode = @(x,u) [
-  velocity_cascade*x; % first three rows
-  reshape(sp(x(4:(4+8)),hat(x(25:27))),[9 1]); % d/dt Rq = Rq Om_hat
-  reshape(sp(x(13:(13+8)),hat(x(28:30))),[9 1]); % d/dt Rg = Rg w_hat
-  u(1)/(mg_+mq_)*sp(x(4:(4+8)),e3) - g_*e3; % acceleration of system center of mass is due to gravity and thrust
-  compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)));
-];
+% ode = @(x,u) [
+%   velocity_cascade*x; % first three rows
+%   reshape(sp(x(4:(4+8)),hat(x(25:27))),[9 1]); % d/dt Rq = Rq Om_hat
+%   u(1)/(mg_+mq_)*sp(x(4:(4+8)),e3) - g_*e3; % acceleration of system center of mass is due to gravity and thrust
+%   compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)));
+% ];
 
 % x = [x_s; Rq; Rg; xs_d; Om; w]

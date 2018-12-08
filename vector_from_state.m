@@ -1,10 +1,12 @@
-function x = vector_from_state(xs, Rq, Rg, xs_d, Om, w)
+function x = vector_from_state(xs, Rg, th1, th2, xs_d, w, th1d, th2d)
     x = [
         xs;
-        reshape(Rq,[9 1]);
         reshape(Rg,[9 1]);
+        th1;
+        th2;
         xs_d;
-        Om;
         w;
+        th1d;
+        th2d;
     ];
 end
