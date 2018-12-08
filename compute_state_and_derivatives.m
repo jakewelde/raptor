@@ -1,4 +1,6 @@
-function [xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, th1_d_des, th2_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des] = compute_state_and_derivatives(C_stacked,t,total_dt)
+function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_des] = compute_state_and_derivatives(C_stacked,t,total_dt)
+
+% function [xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, th1_d_des, th2_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des] = compute_state_and_derivatives(C_stacked,t,total_dt)
 
     %% Trajectory Evaluation 
     
@@ -62,8 +64,8 @@ function [xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, t
     
     components = Rg_des*b3; % == [ cos(th1)*sin(th2); -sin(th1); cos(th1)*cos(th2); ];
 
-    th2_des = atan2(components(1),components(3));
-    sinth1 = -components(2);
+    th2_des = atan2(components(1),components(3))+pi;
+    sinth1 = components(2);
     costh1 = components(3) / cos(th2_des);
     th1_des = atan2(sinth1,costh1);
 
@@ -73,7 +75,7 @@ function [xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, t
     
     thds = compute_thd_from_Om12_state(Rg_des,w_des,th1_des,th2_des,Om_des12(1),Om_des12(2));
     th1_d_des = thds(1);
-    th2_d_des = thds(2);
+    th2_d_des = -thds(2);
 
     
     
@@ -103,5 +105,8 @@ thrust_dd = (Rq_des*e3).' * (mg_+mq_) * xs_dddd_des - thrust*e3.'*hat(Om_des)^2*
     thdds = compute_thdd_from_Om_d12_state(Rg_des,w_des,w_d_des,th1_des,th2_des,th1_d_des,th2_d_des,Om_d_des12(1),Om_d_des12(2));
     th1_dd_des = thdds(1);
     th2_dd_des = thdds(2);
+    
+    
+    state_des = vector_from_state(xs_des, Rg_des, th1_des, th2_des, xs_d_des, w_des, th1_d_des, th2_d_des);
 
 end

@@ -53,6 +53,7 @@ subplot(4,2,1);
 cla;
 hold on;
 plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
+plot(ts,state_des(:,1),'r--',ts,state_des(:,2),'g--',ts,state_des(:,3),'b--');
 % plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
 % plot(ts,state(:,1).'-xs_rec(1,:),'r',ts,state(:,2).'-xs_rec(2,:),'g',ts,state(:,3).'-xs_rec(3,:),'b');
 hold off;
@@ -63,6 +64,7 @@ subplot(4,2,3);
 cla;
 hold on;
 plot(ts,state(:,15),'r',ts,state(:,16),'g',ts,state(:,17),'b');
+plot(ts,state_des(:,15),'r--',ts,state_des(:,16),'g--',ts,state_des(:,17),'b--');
 %     plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
 % plot(ts,state(:,22).'-xs_rec(4,:),'r',ts,state(:,23).'-xs_rec(5,:),'g',ts,state(:,24).'-xs_rec(6,:),'b');
 hold off;
@@ -73,6 +75,7 @@ subplot(4,2,5);
 cla;
 hold on;
 plot(ts,state(:,21),'r',ts,state(:,22),'g');
+plot(ts,state_des(:,21),'r--',ts,state_des(:,22),'g--');
 %     plot(ts,Om_rec(1,:),'r--',ts,Om_rec(2,:),'g--',ts,Om_rec(3,:),'b--');
 % plot(ts,state(:,25).'-Om_rec(1,:),'r',ts,state(:,26).'-Om_rec(2,:),'g',ts,state(:,27).'-Om_rec(3,:),'b');
 hold off;
@@ -83,7 +86,7 @@ subplot(4,2,7);
 cla;
 hold on;
 plot(ts,state(:,18),'r',ts,state(:,19),'g',ts,state(:,20),'b');
-%     plot(ts,w_rec(1,:),'r--',ts,w_rec(2,:),'g--',ts,w_rec(3,:),'b--');
+plot(ts,state_des(:,18),'r--',ts,state_des(:,19),'g--',ts,state_des(:,20),'b--');
 % plot(ts,state(:,28).'-w_rec(1,:),'r',ts,state(:,29).'-w_rec(2,:),'g',ts,state(:,30).'-w_rec(3,:),'b');
 hold off;
 title('gripper angular velocity');
@@ -116,11 +119,15 @@ title('control efforts');
 legend('f','M1','M2','M3','T1','T2');
 ylabel('[N] or [N \cdot m]')
 
-% subplot(4,2,8);
-% plot(ts,constraint_check);
-% title('g_2 \cdot b_1 = 0');
-% ylabel('[radians]')    
-% 
+subplot(4,2,8);
+cla;
+hold on;
+plot(ts,state(:,13),'r',ts,state(:,14),'g');
+plot(ts,state_des(:,13),'r--',ts,state_des(:,14),'g--');
+hold off;
+title('joint angles');
+ylabel('[radians]')    
+
 
 shg;
 drawnow;
@@ -135,8 +142,9 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 10;
+step = 100;
 for range=[1:step:n n]
+
     [az,el]=view;
     cla;
     hold on;
@@ -164,6 +172,7 @@ for range=[1:step:n n]
     ylabel('y');
     zlabel('z');
     hold off;
+    title(range*segment_dt)
     drawnow;
     
 end

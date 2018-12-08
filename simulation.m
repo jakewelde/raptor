@@ -3,10 +3,10 @@
 % Rq0 = axisangle(e3,.1); % hover 
 % Rg0 = axisangle(e3,.1)*axisangle(e2,pi/2); % arm downwards
 
-Rg0 = axisangle(e2,pi/4);
+Rg0 = axisangle(e2,pi/2);
 
 th1 = 0;
-th2 = -pi/4;
+th2 = -pi/2;
 
 x0 = vector_from_state(...
     [0;0;Ls_],Rg0,th1,th2,...
@@ -14,10 +14,11 @@ x0 = vector_from_state(...
 );
 
 %% Configure Simulation Parameters
-segment_dt = .001;
-total_dt = .2;
+segment_dt = .0001;
+total_dt = .5;
 n = floor(total_dt/segment_dt);
 state = zeros(n,size(x0,1));
+state_des = zeros(size(state));
 state(1,:) = x0;
 current_state = x0;
 
@@ -56,7 +57,7 @@ end
 % trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],total_dt);
 % trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],total_dt);
 
-trajectory.x = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.x = find_coefficients([0;0;0;0],[.1;0;0;0],total_dt);
 trajectory.y = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 
@@ -64,7 +65,7 @@ trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 % trajectory.b = find_coefficients([pi/2;0;0;0],[.95*pi/2;0;0;0],total_dt);
 % trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
-trajectory.b = find_coefficients([0;0;0;0],[.1;0;0;0],total_dt);
+trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt);
 trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 
 stacked = [
@@ -110,13 +111,8 @@ for j=1:n
     t = segment_dt * j;
     
     % compute feedforward control
-    [u_ff, xe_rec, xs_rec, w_rec] = compute_control(stacked, t, total_dt,current_state);
-
-% %     record_nominal_trajectory;
+    [u_ff, current_state_des] = compute_control(stacked, t, total_dt,current_state);
     
-    % 
-%     u_ff = [(mg_+mq_)*g_ 0 0 0 0 0].';
-
     % integrate dynamics 
     tspan=segment_dt*(j-1)+[0 segment_dt];
     [~,qs] = ode45(@(t,x) ode(x,u_ff),tspan,current_state);   
@@ -129,6 +125,7 @@ for j=1:n
 
     % record state and control inputs for plotting
     state(j,:) = vector_from_state(xs, Rg, th1, th2, xs_d, w, th1d, th2d);
+    state_des(j,:) = current_state_des;
     us(j,:) = u_ff.';
  
 end
