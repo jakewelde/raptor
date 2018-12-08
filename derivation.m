@@ -160,6 +160,8 @@ compute_Om_d_state = @(Rg,th1,th2,th1d,th2d,th1dd,th2dd,w,w_d) compute_Om_d_all(
 
 %% Kinematics
 
+disp('Computing translational dynamics...');
+
 r = -Lg*Rg*e1; % vector from gripper center of mass to center of actuation
 
 xg = xs + (Lg*mq)/(mg+mq)*Rg*e1; % gripper position using system enter of mass and gripper orientation
@@ -185,6 +187,8 @@ equations = [
     (Rg*e2).'*(Mr_gripper) - T2 % == 0;
 ];
 
+disp('Arranging in form M(q) q'''' = a(q,q'') + B(q,q'') u');
+
 acc = [w_d; th1dd; th2dd];
 [M,affine] = equationsToMatrix(equations,acc);
 [B,a] = equationsToMatrix(affine,u);
@@ -194,14 +198,10 @@ a = -a;
 
 %% Dynamics Solution 
 
-% Combine the results from above into one vector equation that gives six
-% different constraints on the angular accelerations, which should allow us
-% to solve for them.
-
-
-
 % check that the dynamics are actually of the form necessary to use
 % jacobian() etc to massage the equations like we did above
+
+disp('Functionalizing...');
 
 if ~eval(jacobian(M(:),acc) == 0)
    disp('Error : Dynamics are nonlinear in acceleration, cannot solve dynamics');
@@ -227,29 +227,52 @@ compute_M_all = matlabFunction(M);
 compute_B_all = matlabFunction(B);
 compute_a_all = matlabFunction(a);
 
-return 
 %% Differential Flatness
 
-% x_dd_des = sym('x_dd_des',[3 1]);
-% x_ddd_des = sym('x_ddd_des',[3 1]);
-% x_dddd_des = sym('x_dddd_des',[3 1]);
+disp('Computing differential flatness relationships')
+
+syms Om_des1 Om_des2
+syms Om_d_des1 Om_d_des2
+
+[J1, j1] = equationsToMatrix([Om(1); Om(2)] == [Om_des1; Om_des2],[th1d; th2d]);
+compute_thd_from_Om12_all = matlabFunction(inv(J1)*j1);
+
+[J2, j2] = equationsToMatrix([Om_d(1); Om_d(2)] == [Om_d_des1;Om_d_des2],[th1dd;th2dd]);
+compute_thdd_from_Om_d12_all = matlabFunction(inv(J2)*j2);
+
+
+
 % 
-% thrust    = (Rq*e3).' * (mg+mq) * (x_dd_des + g*e3);
-% thrust_d  = (Rq*e3).' * (mg+mq) * x_ddd_des;
-% thrust_dd = (Rq*e3).' * (mg+mq) * x_dddd_des - thrust*e3.'*hat(Om)^2*e3;
+% % Om_d_des = F \ d
+% 
+% xs_dd_des = sym('x_dd_des',[3 1]);
+% xs_ddd_des = sym('x_ddd_des',[3 1]);
+% xs_dddd_des = sym('x_dddd_des',[3 1]);
+% 
+% 
+% thrust    = (Rq*e3).' * (mg+mq) * (xs_dd_des + g*e3);
+% thrust_d  = (Rq*e3).' * (mg+mq) * xs_ddd_des;
+% thrust_dd = (Rq*e3).' * (mg+mq) * xs_dddd_des - thrust*e3.'*hat(Om_des)^2*e3;
 % 
 % dynamics_thrust_constraint = ...
-%      -(mg+mq) * x_dddd_des + ...
+%      -(mg+mq) * xs_dddd_des + ...
 %        thrust * Rq * ( hat(Om_d) + hat(Om)^2 ) * e3 + ...
 %      thrust_d * 2 * Rq * hat(Om) * e3  + ...
 %     thrust_dd * Rq * e3; % == 0
 % 
-% % F * Om_d_des - g = 0
+% 
+% 
+% 
 % 
 % thrust_vectoring_constraints = [
-%     kinematic_constraint_exp;
-%     dynamics_thrust_constraint
+%     dynamics_thrust_constraint(1);
+%     dynamics_thrust_constraint(2);
 % ];
+% [F,d] = equationsToMatrix(thrust_vectoring_constraints == 0,[Om_d(1); Om_d(2)])
+% 
+
+
+
 % 
 % F = simplify(jacobian(thrust_vectoring_constraints,Om_d));
 % d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
@@ -257,15 +280,13 @@ return
 % compute_F_all = matlabFunction(F);
 % compute_d_all = matlabFunction(d);
 % 
-% %% Angular for differential flatness
 % 
 % quad_velocity_constraints = [
-%     (Rq*Om - Rg*w).'*cross(Rg*e2,Rq*e1); % == 0
 %     [e1.'; e2.'] * Om - 1 / (norm(x_dd_des+g*e3)) * [-(Rq*e2).'; (Rq*e1).']*x_ddd_des; % == 0 
 % ];
-% 
-% % L Om = o
-% 
+% % 
+% % % L Om = o
+% % 
 % L = simplify(jacobian(quad_velocity_constraints,Om));
 % o = -simplify(expand(quad_velocity_constraints - L * Om));
 % 
@@ -273,37 +294,79 @@ return
 % compute_o_all = matlabFunction(o);
 
 %% Euler Angle planning
- 
+
+% utilities for planning trajectories on SO(3) using Euler angles.
+
+% trajectory_planning;
+
+% order = 8;
+% syms t_f
+% C_R = sym('C_R',[order 1]);
+% C_S = sym('C_S',[order 1]);
+% C_W = sym('C_W',[order 1]);
+% syms t 
+% 
+% roll_derivatives = compute_derivatives(C_R,t,t_f);
+% swing_derivatives = compute_derivatives(C_S,t,t_f);
+% wrist_derivatives = compute_derivatives(C_W,t,t_f);
+% 
+% Rg_des = axisangle(e2,roll_derivatives(1))*axisangle(e2,swing_derivatives(1))*axisangle(e1,wrist_derivatives(1));
+% 
+% w_d_des = diff(w_des,time);
+% w_dd_des = diff(w_d_des,time);
+% w_ddd_des = diff(w_dd_des,time);
+% 
+% desired_orientation = matlabFunction(Rg_des);
+% angular_derivatives = matlabFunction([
+%        w_des.';
+%      w_d_des.';
+%     w_dd_des.';
+%    w_ddd_des.';
+% ]);
+% 
+% compute_Rg_des = @(C_R, C_S, C_W, t, t_f) desired_orientation(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
+% compute_angulars_des = @(C_R, C_S, C_W, t, t_f) angular_derivatives(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
+
+
 trajectory_planning;
 
-order = 8;
-syms t_f
-C_R = sym('C_R',[order 1]);
-C_S = sym('C_S',[order 1]);
-C_W = sym('C_W',[order 1]);
-syms t 
+syms alpha(t) beta(t) gamma(t)
 
-roll_derivatives = compute_derivatives(C_R,t,t_f);
-swing_derivatives = compute_derivatives(C_S,t,t_f);
-wrist_derivatives = compute_derivatives(C_W,t,t_f);
+Rg_des = axisangle(e3,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
+w_des = unhat(Rg_des.' * diff(Rg_des,t));
+w_d_des = diff(w_des,t);
+w_dd_des = diff(w_d_des,t);
+w_ddd_des = diff(w_dd_des,t);
 
-
-Rg_des = axisangle(e2,roll_derivatives(1))*axisangle(e2,swing_derivatives(1))*axisangle(e1,wrist_derivatives(1));
-
-w_d_des = diff(w_des,time);
-w_dd_des = diff(w_d_des,time);
-w_ddd_des = diff(w_dd_des,time);
-
-desired_orientation = matlabFunction(Rg_des);
-angular_derivatives = matlabFunction([
+angular_block = [
        w_des.';
      w_d_des.';
     w_dd_des.';
    w_ddd_des.';
-]);
+];
 
-compute_Rg_des = @(C_R, C_S, C_W, t, t_f) desired_orientation(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
-compute_angulars_des = @(C_R, C_S, C_W, t, t_f) angular_derivatives(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
+syms a ad add addd adddd
+syms b bd bdd bddd bdddd
+syms c cd cdd cddd cdddd
+
+sym_derivatives = [
+    alpha  diff(alpha,t)  diff(alpha,t,2)  diff(alpha,t,3)  diff(alpha,t,4) 
+    beta  diff(beta,t)  diff(beta,t,2)  diff(beta,t,3)  diff(beta,t,4)
+    gamma  diff(gamma,t)  diff(gamma,t,2)  diff(gamma,t,3)  diff(gamma,t,4)
+];
+
+symbol_derivatives = [
+    a ad add addd adddd
+	b bd bdd bddd bdddd
+	c cd cdd cddd cdddd
+];
+
+substituted_block = simplify(subs(angular_block,sym_derivatives,symbol_derivatives));
+
+global compute_angular_derivatives compute_Rg_angles
+compute_angular_derivatives = matlabFunction(substituted_block);
+compute_Rg_angles = matlabFunction(simplify(subs(Rg_des,sym_derivatives,symbol_derivatives)));
+
 
 %% Numerical Physical Parameters
 
@@ -341,6 +404,7 @@ Jg_ = diag([Jgx_ Jgy_ Jgz_]); % gripper inertia
 % to supply these parameters every time we call the functions.
 
 global compute_M_state compute_B_state compute_a_state
+global compute_thd_from_Om12_state compute_thdd_from_Om_d12_state
 % global compute_F_state compute_d_state compute_L_state compute_o_state
 
 % dynamics
@@ -348,28 +412,7 @@ compute_M_state = @(Rg,th1,th2) compute_M_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,
 compute_B_state = @(Rg,th1,th2) compute_B_all(Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),mg_,mq_,th1,th2);
 compute_a_state = @(Rg,w,th1,th2,th1d,th2d) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jqy_,Jqz_,Lg_,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),g_,mg_,mq_,th1,th2,th1d,th2d,w(1),w(2),w(3));
 
-% % differential flatness
-% compute_F_state = @(Rg,Rq,x_dd_des) compute_F_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,x_dd_des(1),x_dd_des(2),x_dd_des(3));
-% compute_d_state = @(Rg,Rq,Om,w,w_d,x_dd_des,x_ddd_des,x_dddd_des) compute_d_all(Om(1),Om(2),Om(3),Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3),g_,mg_,mq_,w(1),w(2),w(3),w_d(1),w_d(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3),x_dddd_des(1),x_dddd_des(2),x_dddd_des(3));
-% 
-% compute_L_state = @(Rg,Rq) compute_L_all(Rg(1,2),Rg(2,2),Rg(3,2),Rq(1,1),Rq(1,2),Rq(1,3),Rq(2,1),Rq(2,2),Rq(2,3),Rq(3,1),Rq(3,2),Rq(3,3));
-% compute_o_state = @(Rg, Rq, w, x_dd_des, x_ddd_des) compute_o_all(Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),Rq(1,1),Rq(1,2),Rq(2,1),Rq(2,2),Rq(3,1),Rq(3,2),g_,w(1),w(3),x_dd_des(1),x_dd_des(2),x_dd_des(3),x_ddd_des(1),x_ddd_des(2),x_ddd_des(3));
+% differential flatness
+compute_thd_from_Om12_state = @(Rg,w,th1,th2,Om_des1,Om_des2) compute_thd_from_Om12_all(Om_des1,Om_des2,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,w(1),w(2),w(3));
+compute_thdd_from_Om_d12_state = @(Rg,w,w_d,th1,th2,th1d,th2d,Om_d_des1,Om_d_des2) compute_thdd_from_Om_d12_all(Om_d_des1,Om_d_des2,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,th1d,th2d,w(1),w(2),w(3),w_d(1),w_d(2),w_d(3));
 
-%% ode45 Interface
-
-% Take the functions we've generated above, which deal only with the
-% angular accelerations, and combine them with the translational dynamics
-% and the position-velocity integration relationships to create the full
-% dynamics of the robot as a system of first order ODE's in order to
-% provide to MATLAB ode solver.
-
-% derivative of center of mass position is center of mass velocity
-
-% ode = @(x,u) [
-%   velocity_cascade*x; % first three rows
-%   reshape(sp(x(4:(4+8)),hat(x(25:27))),[9 1]); % d/dt Rq = Rq Om_hat
-%   u(1)/(mg_+mq_)*sp(x(4:(4+8)),e3) - g_*e3; % acceleration of system center of mass is due to gravity and thrust
-%   compute_M_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3))) \ (compute_B_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)))* u + compute_a_state(sp(x(13:13+8),eye(3)),sp(x(4:4+8),eye(3)),x(25:27),x(28:30)));
-% ];
-
-% x = [x_s; Rq; Rg; xs_d; Om; w]

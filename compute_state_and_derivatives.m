@@ -1,8 +1,18 @@
-function [xs_des, xe_des, Rq_des, Rg_des, xs_d_des, xe_d_des, Om_des, w_des, xs_dd_des, Om_d_des, w_d_des] = compute_state_and_derivatives(C_stacked,t,total_dt)
+function [xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, th1_d_des, th2_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des] = compute_state_and_derivatives(C_stacked,t,total_dt)
 
-    global Ls_ e1 e3 g_
+    %% Trajectory Evaluation 
+    
+    % Compute the higher derivatives of flat state using coefficients and
+    % also transform the Euler Angle trajectory and derivatives to the
+    % space of SO(3), angular velocity, angular acceleration, ...
+    
+    global Ls_ e1 e2 e3 g_ mg_ mq_
     global compute_derivatives hat
-    global compute_F_state compute_d_state compute_L_state compute_o_state
+    global compute_Rq_state compute_Om_state;
+    global compute_thd_from_Om12_state compute_thdd_from_Om_d12_state
+    
+    
+%     global compute_F_state compute_d_state compute_L_state compute_o_state
 
     trajectory.x = C_stacked(1:8);
     trajectory.y = C_stacked(9:16);
@@ -47,47 +57,51 @@ function [xs_des, xe_des, Rq_des, Rg_des, xs_d_des, xe_d_des, Om_des, w_des, xs_
     xs_dd_des = xe_dd_des-Ls_*Rg_des*(wdh+wh^2)*e1;
     xs_ddd_des = xe_ddd_des-Ls_*Rg_des*(wddh + 3*wh*wdh + wh^3)*e1;
     xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
-
-
-
-
+    
     b3 = (xs_dd_des + g_ * e3)/norm(xs_dd_des + g_ * e3);
+    
+    components = Rg_des*b3; % == [ cos(th1)*sin(th2); -sin(th1); cos(th1)*cos(th2); ];
 
-    g2 = Rg_des(:,2);
-    g3 = Rg_des(:,3);
+    th2_des = atan2(components(1),components(3));
+    sinth1 = -components(2);
+    costh1 = components(3) / cos(th2_des);
+    th1_des = atan2(sinth1,costh1);
 
-    % A is full rank unless b3 g2 g3 lie in the same plane, which can only
-    % occur when g1 lies in the plane spanned by b1 and b2
-    A = [
-        transpose(b3);
-        transpose(g2);
-        transpose(g3);
-    ];
+    Rq_des = compute_Rq_state(Rg_des,th1_des,th2_des);
+    
+    Om_des12 = 1 / (norm(xs_dd_des+g_*e3)) * [-(Rq_des*e2).'; (Rq_des*e1).']*xs_ddd_des;
+    
+    thds = compute_thd_from_Om12_state(Rg_des,w_des,th1_des,th2_des,Om_des12(1),Om_des12(2));
+    th1_d_des = thds(1);
+    th2_d_des = thds(2);
 
-    % TODO : is this valid in all orientations?
+    
+    
+    
+    
+    
+    Om_des = compute_Om_state(Rg_des,th1_des,th2_des,th1_d_des,th2_d_des,w_des);
+    
+    
+    
+    
+thrust    = (Rq_des*e3).' * (mg_+mq_) * (xs_dd_des + g_*e3);
+thrust_d  = (Rq_des*e3).' * (mg_+mq_) * xs_ddd_des;
+thrust_dd = (Rq_des*e3).' * (mg_+mq_) * xs_dddd_des - thrust*e3.'*hat(Om_des)^2*e3;
 
-    b1 = A\[0;0;1];
-    b1 = b1 / norm(b1);
-    b2 = cross(b3, b1);
-    Rq_des = [b1 b2 b3];
+      Om_d_des12 = ...
+          [0 -1 0; 1 0 0]*Rq_des.'*(...
+     -Rq_des * ( hat(Om_des)^2 ) * e3 + ...
+    1/thrust * (...
+   (mg_+mq_) * xs_dddd_des + ...
+   -thrust_d * 2 * Rq_des * hat(Om_des) * e3  + ...
+  -thrust_dd * Rq_des * e3...
+    ));
 
-    L = compute_L_state(Rg_des,Rq_des);
-    o = compute_o_state(Rg_des, Rq_des, w_des, xs_dd_des, xs_ddd_des);
 
-    Om_des = L \ o;
 
-    % find angular acceleration of quadrotor body
-    F = compute_F_state(Rg_des, Rq_des,xs_dd_des);
-    d = compute_d_state(Rg_des,Rq_des,Om_des,w_des,w_d_des,xs_dd_des,xs_ddd_des,xs_dddd_des);
-
-    % necessary due to numerical issues
-    H = [F d];
-    [U,S,V] = svd(H);
-    if(S(end) ~= 0)
-        S(end) = 0;
-        H = U*S*V.';
-    end
-    REF = rref(H);
-    Om_d_des = double(REF(1:3,4));
+    thdds = compute_thdd_from_Om_d12_state(Rg_des,w_des,w_d_des,th1_des,th2_des,th1_d_des,th2_d_des,Om_d_des12(1),Om_d_des12(2));
+    th1_dd_des = thdds(1);
+    th2_dd_des = thdds(2);
 
 end

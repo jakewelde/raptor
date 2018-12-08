@@ -1,31 +1,34 @@
-function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_des, xs_dd_des,Om_d_des, w_d_des, state)
+function u = feedback_linearization(xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, th1_d_des, th2_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state)
 
     global e3
 
     global mg_ mq_ g_
     global compute_M_state compute_B_state compute_a_state
+    global compute_Rq_state;
     global hat unhat
 
     % Feedback Linearization
 
-    [xs, Rq, Rg, xs_d, Om, w] = state_from_vector(state);
+    [xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(state);
 
-    acc_nominal = [(Rq_des*e3).'*xs_dd_des; Om_d_des; w_d_des];
+    Rq_des = compute_Rq_state(Rg,th1,th2);
+    
+    acc_nominal = [(Rq_des*e3).'*xs_dd_des; w_d_des; th1_dd_des; th2_dd_des];
 
     % Compute numerical function that represents the evolution of the system's
     % state at the current point in state space, but is still a function of the
     % inputs of the system
     M = [
-      (mg_+mq_)   zeros(1,6);
-      zeros(6,1) compute_M_state(Rg_des,Rq_des);
+      (mg_+mq_)   zeros(1,5);
+      zeros(5,1) compute_M_state(Rg,th1,th2)
     ];
     B = [
         1 zeros(1,5);
-        compute_B_state(Rg_des,Rq_des);
+        compute_B_state(Rg,th1,th2);
     ];
     a = [
         (Rq_des*e3).'*(-(mg_+mq_)*g_*e3);
-        compute_a_state(Rg_des,Rq_des,Om_des,w_des);
+        compute_a_state(Rg,w,th1,th2,th1d,th2d);
     ];
 
     % M x'' = B u + a(x)
@@ -63,34 +66,37 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
 %     if(nargin < 7)
 %         xe = zeros(12,1); 
 %     else
-        [~,~,~,~,Om,w] = state_from_vector(state);
-        xe = [
-          (Rq_des*e3).'*(xs - xs_des);
-          (Rq_des*e3).'*(xs_d - xs_d_des);
-          1/2*unhat(Rq_des.'*Rq - Rq.'*Rq_des); % body rotation error   
-          Om - Rq.'*Rq_des*Om_des;
-          1/2*unhat(Rg_des.'*Rg - Rg.'*Rg_des); % gripper rotation error   
-          w - Rg.'*Rg_des*w_des;
-        ];
 
-    %     end
-%     -4*sqrt(1e17)
-    Kx = 1e4;
-    Kv = 2*sqrt(Kx);
 
-    Krq = 5e5;
-    KOm = 2*sqrt(Krq);
-    Krg = 5e5;
-    Kw = 2*sqrt(Krq);
-    K = -[
-        Kx  Kv  0   0   0   0   0   0   0   0   0   0   0   0;
-        0   0   Krq 0   0   KOm 0   0   0   0   0   0   0   0;
-        0   0   0   Krq 0   0   KOm 0   0   0   0   0   0   0;
-        0   0   0   0   Krq 0   0   KOm 0   0   0   0   0   0;
-        0   0   0   0   0   0   0   0   Krg 0   0   Kw  0   0;
-        0   0   0   0   0   0   0   0   0   Krg 0   0   Kw  0;
-        0   0   0   0   0   0   0   0   0   0   Krg 0   0   Kw;
-    ];
+
+
+
+%     [~,~,~,~,Om,w] = state_from_vector(state);
+%     xe = [
+%       (Rq_des*e3).'*(xs - xs_des);
+%       (Rq_des*e3).'*(xs_d - xs_d_des);
+%       1/2*unhat(Rq_des.'*Rq - Rq.'*Rq_des); % body rotation error   
+%       Om - Rq.'*Rq_des*Om_des;
+%       1/2*unhat(Rg_des.'*Rg - Rg.'*Rg_des); % gripper rotation error   
+%       w - Rg.'*Rg_des*w_des;
+%     ];
+% 
+%     Kx = 1e4;
+%     Kv = 2*sqrt(Kx);
+% 
+%     Krq = 5e5;
+%     KOm = 2*sqrt(Krq);
+%     Krg = 5e5;
+%     Kw = 2*sqrt(Krq);
+%     K = -[
+%         Kx  Kv  0   0   0   0   0   0   0   0   0   0   0   0;
+%         0   0   Krq 0   0   KOm 0   0   0   0   0   0   0   0;
+%         0   0   0   Krq 0   0   KOm 0   0   0   0   0   0   0;
+%         0   0   0   0   Krq 0   0   KOm 0   0   0   0   0   0;
+%         0   0   0   0   0   0   0   0   Krg 0   0   Kw  0   0;
+%         0   0   0   0   0   0   0   0   0   Krg 0   0   Kw  0;
+%         0   0   0   0   0   0   0   0   0   0   Krg 0   0   Kw;
+%     ];
 
 
 %     G = [B (- a + M*(acc_des))];
@@ -99,7 +105,7 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
     
     
 
-    acc_feedback = K*xe;
+    acc_feedback = zeros(6,1); %K*xe;
     
     acc_des = acc_nominal + acc_feedback;
 
@@ -113,30 +119,34 @@ function u = feedback_linearization(xs_des, Rq_des, Rg_des, xs_d_des, Om_des, w_
     % Make this comply with constraints
     
     
-
-    G = [B (- a + M*(acc_des))];
-    [U,S,V] = svd(G);
+% 
+%     G = [B (- a + M*(acc_des))];
+%     
+%     rank(B)
+%     disp(acc_des.')
+    acc_des = [10;20;10;30;0;-10];
+    u = B \ (- a + M*(acc_des));
+%     
+%     % necessary due to numerical issues
+%     if(S(end) ~= 0)
+%         if(S(1)/S(end) < 1e5)
+%             
+%                 G = [B (- a + M*(acc_nominal))];
+%                 [U,S,V] = svd(G);
+%         disp(S(1)/S(end))
+%         
+%                         G = [B (- a + M*(K*xe))];
+%                 [U,S,V] = svd(G);
+%         disp(S(1)/S(end))
+%                 
+%             throw(MException('ConstraintException', ...
+%         'Feedback linearization nonsingular, singular value ratio equals',S(1)/S(end)));
+%         end
+%         S(end) = 0;
+%         G = U*S*V.';
+%     end
+%     REF = rref(G);
     
-    % necessary due to numerical issues
-    if(S(end) ~= 0)
-        if(S(1)/S(end) < 1e5)
-            
-                G = [B (- a + M*(acc_nominal))];
-                [U,S,V] = svd(G);
-        disp(S(1)/S(end))
-        
-                        G = [B (- a + M*(K*xe))];
-                [U,S,V] = svd(G);
-        disp(S(1)/S(end))
-                
-            throw(MException('ConstraintException', ...
-        'Feedback linearization nonsingular, singular value ratio equals',S(1)/S(end)));
-        end
-        S(end) = 0;
-        G = U*S*V.';
-    end
-    REF = rref(G);
-    
-    u = double(REF(1:6,7));  
+%     u = double(REF(1:6,7));  
     
 end

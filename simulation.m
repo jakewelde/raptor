@@ -3,10 +3,10 @@
 % Rq0 = axisangle(e3,.1); % hover 
 % Rg0 = axisangle(e3,.1)*axisangle(e2,pi/2); % arm downwards
 
-Rg0 = axisangle(e2,0); % arm downwards
+Rg0 = axisangle(e2,pi/4);
 
 th1 = 0;
-th2 = 0;
+th2 = -pi/4;
 
 x0 = vector_from_state(...
     [0;0;Ls_],Rg0,th1,th2,...
@@ -14,8 +14,8 @@ x0 = vector_from_state(...
 );
 
 %% Configure Simulation Parameters
-segment_dt = .0001;
-total_dt = 1;
+segment_dt = .001;
+total_dt = .2;
 n = floor(total_dt/segment_dt);
 state = zeros(n,size(x0,1));
 state(1,:) = x0;
@@ -56,17 +56,21 @@ end
 % trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],total_dt);
 % trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],total_dt);
 
+trajectory.x = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.y = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.z = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+
 % trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
 % trajectory.b = find_coefficients([pi/2;0;0;0],[.95*pi/2;0;0;0],total_dt);
 % trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
-% trajectory.a = find_coefficients([0;0;0;0],[pi/3;0;0;0],total_dt); 
-% trajectory.b = find_coefficients([pi/2;0;0;0],[pi/7;0;0;0],total_dt);
-% trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
+trajectory.b = find_coefficients([0;0;0;0],[.1;0;0;0],total_dt);
+trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 
-% stacked = [
-%     trajectory.x; trajectory.y; trajectory.z;
-%     trajectory.a; trajectory.b; trajectory.g;
-% ];
+stacked = [
+    trajectory.x; trajectory.y; trajectory.z;
+    trajectory.a; trajectory.b; trajectory.g;
+];
 % 
 % figure(3)
 % clf;
@@ -106,12 +110,12 @@ for j=1:n
     t = segment_dt * j;
     
     % compute feedforward control
-%     [u_ff, xe_des, xs_des, w_des, Om_des] = compute_control(stacked, t, total_dt,current_state);
+    [u_ff, xe_rec, xs_rec, w_rec] = compute_control(stacked, t, total_dt,current_state);
 
-%     record_nominal_trajectory;
+% %     record_nominal_trajectory;
     
     % 
-    u_ff = [(mg_+mq_)*g_ 0 0 0 0 0].';
+%     u_ff = [(mg_+mq_)*g_ 0 0 0 0 0].';
 
     % integrate dynamics 
     tspan=segment_dt*(j-1)+[0 segment_dt];
