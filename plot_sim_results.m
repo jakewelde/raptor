@@ -54,8 +54,6 @@ cla;
 hold on;
 plot(ts,state(:,1),'r',ts,state(:,2),'g',ts,state(:,3),'b');
 plot(ts,state_des(:,1),'r--',ts,state_des(:,2),'g--',ts,state_des(:,3),'b--');
-% plot(ts,xs_rec(1,:),'r--',ts,xs_rec(2,:),'g--',ts,xs_rec(3,:),'b--');
-% plot(ts,state(:,1).'-xs_rec(1,:),'r',ts,state(:,2).'-xs_rec(2,:),'g',ts,state(:,3).'-xs_rec(3,:),'b');
 hold off;
 title('system center of mass position');
 ylabel('position [m]')
@@ -65,8 +63,6 @@ cla;
 hold on;
 plot(ts,state(:,15),'r',ts,state(:,16),'g',ts,state(:,17),'b');
 plot(ts,state_des(:,15),'r--',ts,state_des(:,16),'g--',ts,state_des(:,17),'b--');
-%     plot(ts,xs_rec(4,:),'r--',ts,xs_rec(5,:),'g--',ts,xs_rec(6,:),'b--');
-% plot(ts,state(:,22).'-xs_rec(4,:),'r',ts,state(:,23).'-xs_rec(5,:),'g',ts,state(:,24).'-xs_rec(6,:),'b');
 hold off;
 title('system center of mass velocity');
 ylabel('velocity [m/s]')
@@ -76,8 +72,6 @@ cla;
 hold on;
 plot(ts,state(:,21),'r',ts,state(:,22),'g');
 plot(ts,state_des(:,21),'r--',ts,state_des(:,22),'g--');
-%     plot(ts,Om_rec(1,:),'r--',ts,Om_rec(2,:),'g--',ts,Om_rec(3,:),'b--');
-% plot(ts,state(:,25).'-Om_rec(1,:),'r',ts,state(:,26).'-Om_rec(2,:),'g',ts,state(:,27).'-Om_rec(3,:),'b');
 hold off;
 title('joint velocities');
 ylabel('velocity [1/s]')
@@ -87,7 +81,6 @@ cla;
 hold on;
 plot(ts,state(:,18),'r',ts,state(:,19),'g',ts,state(:,20),'b');
 plot(ts,state_des(:,18),'r--',ts,state_des(:,19),'g--',ts,state_des(:,20),'b--');
-% plot(ts,state(:,28).'-w_rec(1,:),'r',ts,state(:,29).'-w_rec(2,:),'g',ts,state(:,30).'-w_rec(3,:),'b');
 hold off;
 title('gripper angular velocity');
 ylabel('velocity [1/s]')
@@ -96,8 +89,6 @@ subplot(4,2,2);
 cla;
 hold on;
 plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
-%     plot(ts,xe_rec(1,:),'r--',ts,xe_rec(2,:),'g--',ts,xe_rec(3,:),'b--');
-% plot(ts,xe(:,1).'-xe_rec(1,:),'r',ts,xe(:,2).'-xe_rec(2,:),'g',ts,xe(:,3).'-xe_rec(3,:),'b');
 hold off;
 title('end effector position in world');
 ylabel('position [m]')
@@ -106,8 +97,6 @@ subplot(4,2,4);
 cla;
 hold on;
 plot(ts,ve(:,1),'r',ts,ve(:,2),'g',ts,ve(:,3),'b');
-%     plot(ts,xe_rec(4,:),'r--',ts,xe_rec(5,:),'g--',ts,xe_rec(6,:),'b--');
-% plot(ts,ve(:,1).'-xe_rec(4,:),'r',ts,ve(:,2).'-xe_rec(5,:),'g',ts,ve(:,3).'-xe_rec(6,:),'b');
 hold off;
 title('end effector velocity in world');
 ylabel('velocity [m/s]')

@@ -59,12 +59,25 @@ function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_de
     xs_dd_des = xe_dd_des-Ls_*Rg_des*(wdh+wh^2)*e1;
     xs_ddd_des = xe_ddd_des-Ls_*Rg_des*(wddh + 3*wh*wdh + wh^3)*e1;
     xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
+
+    
+    xs_des = xe_des;
+    xs_d_des = xe_d_des;
+    xs_dd_des = xe_dd_des;
+    xs_ddd_des = xe_ddd_des;
+    xs_dddd_des = xe_dddd_des;
+    
     
     b3 = (xs_dd_des + g_ * e3)/norm(xs_dd_des + g_ * e3);
     
-    components = Rg_des*b3; % == [ cos(th1)*sin(th2); -sin(th1); cos(th1)*cos(th2); ];
+    components = Rg_des.'*b3; 
+    % == [ 
+    %  cos(th1)*sin(th2); 
+    % -sin(th1); 
+    %  cos(th1)*cos(th2);
+    % ];
 
-    th2_des = atan2(components(1),components(3))+pi;
+    th2_des = atan2(components(1),components(3));
     sinth1 = components(2);
     costh1 = components(3) / cos(th2_des);
     th1_des = atan2(sinth1,costh1);
@@ -75,7 +88,7 @@ function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_de
     
     thds = compute_thd_from_Om12_state(Rg_des,w_des,th1_des,th2_des,Om_des12(1),Om_des12(2));
     th1_d_des = thds(1);
-    th2_d_des = -thds(2);
+    th2_d_des = thds(2);
 
     
     

@@ -124,7 +124,7 @@ function u = feedback_linearization(xs_des, xe_des, Rg_des, th1_des, th2_des, xs
 %     
 %     rank(B)
 %     disp(acc_des.')
-%     acc_des = [10;0;60;0;0;0];
+%     acc_des = [0;0;0;-60;60;0];
     u = B \ (- a + M*(acc_des));
 %     
 %     % necessary due to numerical issues

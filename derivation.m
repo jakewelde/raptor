@@ -100,7 +100,7 @@ Rg_d*hat(w_dd) + Rg*hat(w_ddd));
 
 syms angle1(t) angle2(t)
 
-Ra = axisangle(e2,angle2(t))*axisangle(e1,angle1(t));
+Ra = axisangle(e2,angle2(t))*axisangle(-e1,angle1(t));
 
    Ra_d = simplify(diff(Ra,t));
   Ra_dd = simplify(diff(Ra_d,t));
@@ -332,7 +332,7 @@ trajectory_planning;
 
 syms alpha(t) beta(t) gamma(t)
 
-Rg_des = axisangle(e3,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
+Rg_des = axisangle(e1,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
 w_des = unhat(Rg_des.' * diff(Rg_des,t));
 w_d_des = diff(w_des,t);
 w_dd_des = diff(w_d_des,t);
