@@ -51,17 +51,21 @@ end
 % trajectory.y = find_coefficients_intermediate([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],t_apex,total_dt);
 % trajectory.z = find_coefficients_intermediate([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],t_apex,total_dt);
 
+trajectory.x = find_coefficients([0;0;0;0],[.3;0;0;0],total_dt);
+trajectory.y = find_coefficients([0;0;0;0],[.2;0;0;0],total_dt);
+trajectory.z = find_coefficients([0;0;0;0],[.8;0;0;0],total_dt);
+trajectory.a = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt); 
+trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2+pi/4;0;0;0],total_dt);
+trajectory.g = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt);
+
 trajectory.x = find_coefficients([0;0;0;0],[.03;0;0;0],total_dt);
 trajectory.y = find_coefficients([0;0;0;0],[.05;0;0;0],total_dt);
 trajectory.z = find_coefficients([0;0;0;0],[.4;0;0;0],total_dt);
-
 trajectory.a = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt); 
 trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2+pi/4;0;0;0],total_dt);
 trajectory.g = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
 
-% trajectory.a = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt); 
-% trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2+pi/4;0;0;0],total_dt);
-% trajectory.g = find_coefficients([0;0;0;0],[pi/6;0;0;0],total_dt);
+
 
 stacked = [
     trajectory.x; trajectory.y; trajectory.z;

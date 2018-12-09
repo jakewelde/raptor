@@ -61,12 +61,12 @@ function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_de
     xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
 
     
-    xs_des = xe_des;
-    xs_d_des = xe_d_des;
-    xs_dd_des = xe_dd_des;
-    xs_ddd_des = xe_ddd_des;
-    xs_dddd_des = xe_dddd_des;
-    
+%     xs_des = xe_des;
+%     xs_d_des = xe_d_des;
+%     xs_dd_des = xe_dd_des;
+%     xs_ddd_des = xe_ddd_des;
+%     xs_dddd_des = xe_dddd_des;
+%     
     
     b3 = (xs_dd_des + g_ * e3)/norm(xs_dd_des + g_ * e3);
     
