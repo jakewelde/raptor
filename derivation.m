@@ -376,18 +376,18 @@ global mq_ mg_ g_
 global Lg_ Le_ Ls_
 
 % Quad Inertia
-Jqx_ = .001; % [kg*m^2]
-Jqy_ = .001; % [kg*m^2]
-Jqz_ = .001; % [kg*m^2]
+Jqx_ = .005; % [kg*m^2]
+Jqy_ = .005; % [kg*m^2]
+Jqz_ = .005; % [kg*m^2]
 
 % Gripper Inertia
 Jgx_ = .001; % [kg*m^2]
-Jgy_ = .001; % [kg*m^2]
-Jgz_ = .001; % [kg*m^2]
+Jgy_ = .005; % [kg*m^2]
+Jgz_ = .005; % [kg*m^2]
 
-mq_ = .5;  % [kg] quad mass
-mg_ = .15; % [kg] gripper mass
-Lg_ = .5;  % [m] distance from center of actuation to gripper COM
+mq_ = .6;  % [kg] quad mass
+mg_ = .35; % [kg] gripper mass
+Lg_ = .4;  % [m] distance from center of actuation to gripper COM
 Le_ = .6;  % [m] distance from center of actuation to end effector
 
 g_ = 9.81; % [m/s^2] acceleration due to gravity

@@ -1,7 +1,5 @@
 function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_des] = compute_state_and_derivatives(C_stacked,t,total_dt)
 
-% function [xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, th1_d_des, th2_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des] = compute_state_and_derivatives(C_stacked,t,total_dt)
-
     %% Trajectory Evaluation 
     
     % Compute the higher derivatives of flat state using coefficients and
@@ -13,9 +11,6 @@ function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_de
     global compute_Rq_state compute_Om_state;
     global compute_thd_from_Om12_state compute_thdd_from_Om_d12_state
     
-    
-%     global compute_F_state compute_d_state compute_L_state compute_o_state
-
     trajectory.x = C_stacked(1:8);
     trajectory.y = C_stacked(9:16);
     trajectory.z = C_stacked(17:24);
@@ -61,13 +56,6 @@ function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_de
     xs_dddd_des = xe_dddd_des-Ls_*Rg_des*(wdddh + 4*wh*wddh + 6*wh^2*wdh + 3*wdh^2 + wh^4)*e1;
 
     
-%     xs_des = xe_des;
-%     xs_d_des = xe_d_des;
-%     xs_dd_des = xe_dd_des;
-%     xs_ddd_des = xe_ddd_des;
-%     xs_dddd_des = xe_dddd_des;
-%     
-    
     b3 = (xs_dd_des + g_ * e3)/norm(xs_dd_des + g_ * e3);
     
     components = Rg_des.'*b3; 
@@ -91,29 +79,21 @@ function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_de
     th2_d_des = thds(2);
 
     
-    
-    
-    
-    
     Om_des = compute_Om_state(Rg_des,th1_des,th2_des,th1_d_des,th2_d_des,w_des);
     
-    
-    
-    
-thrust    = (Rq_des*e3).' * (mg_+mq_) * (xs_dd_des + g_*e3);
-thrust_d  = (Rq_des*e3).' * (mg_+mq_) * xs_ddd_des;
-thrust_dd = (Rq_des*e3).' * (mg_+mq_) * xs_dddd_des - thrust*e3.'*hat(Om_des)^2*e3;
 
-      Om_d_des12 = ...
-          [0 -1 0; 1 0 0]*Rq_des.'*(...
-     -Rq_des * ( hat(Om_des)^2 ) * e3 + ...
+    thrust    = (Rq_des*e3).' * (mg_+mq_) * (xs_dd_des + g_*e3);
+    thrust_d  = (Rq_des*e3).' * (mg_+mq_) * xs_ddd_des;
+    thrust_dd = (Rq_des*e3).' * (mg_+mq_) * xs_dddd_des - thrust*e3.'*hat(Om_des)^2*e3;
+
+    Om_d_des12 = ...
+    [0 -1 0; 1 0 0]*Rq_des.'*(...
+    -Rq_des * ( hat(Om_des)^2 ) * e3 + ...
     1/thrust * (...
-   (mg_+mq_) * xs_dddd_des + ...
-   -thrust_d * 2 * Rq_des * hat(Om_des) * e3  + ...
-  -thrust_dd * Rq_des * e3...
+    (mg_+mq_) * xs_dddd_des + ...
+    -thrust_d * 2 * Rq_des * hat(Om_des) * e3  + ...
+    -thrust_dd * Rq_des * e3...
     ));
-
-
 
     thdds = compute_thdd_from_Om_d12_state(Rg_des,w_des,w_d_des,th1_des,th2_des,th1_d_des,th2_d_des,Om_d_des12(1),Om_d_des12(2));
     th1_dd_des = thdds(1);
