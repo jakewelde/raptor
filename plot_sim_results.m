@@ -89,6 +89,8 @@ subplot(4,2,2);
 cla;
 hold on;
 plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
+hz = [0 total_dt];
+plot(hz,[z_apex z_apex],'-.k')
 hold off;
 title('end effector position in world');
 ylabel('position [m]')
@@ -97,6 +99,7 @@ subplot(4,2,4);
 cla;
 hold on;
 plot(ts,ve(:,1),'r',ts,ve(:,2),'g',ts,ve(:,3),'b');
+plot(hz,[z_d_apex z_d_apex],'-.k')
 hold off;
 title('end effector velocity in world');
 ylabel('velocity [m/s]')
@@ -131,7 +134,7 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 300;
+step = 50;
 for range=[1:step:n n]
 
     [az,el]=view;
@@ -144,18 +147,16 @@ for range=[1:step:n n]
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'color',[.9 .2 .6])
     plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'color',[.9 .2 .6])
 
-    %     plot3(ball_position(1,pts),ball_position(2,pts),ball_position(3,pts),'k');
-%     plot3(ball_position(1,pts(end)),ball_position(2,pts(end)),ball_position(3,pts(end)),...
-%         'o','MarkerEdgeColor','k',...
-%         'MarkerFaceColor','k',...
-%         'MarkerSize',6);
-%     plot3(z_apex(1),z_apex(2),z_apex(3),'rx');
+    plot3(ball_position(1,pts),ball_position(2,pts),ball_position(3,pts),'k');
+    plot3(ball_position(1,pts(end)),ball_position(2,pts(end)),ball_position(3,pts(end)),...
+        'o','MarkerEdgeColor','k',...
+        'MarkerFaceColor','k',...
+        'MarkerSize',6);
+    plot3(z_apex(1),z_apex(2),z_apex(3),'rx');
 
     draw_robot(state(range,:).');
     axis equal    
-%     bounds = [min([(min(state(:,1:3))-3*Lg_).'  min(ball_position.').']); max([(max(state(:,1:3))+3*Lg_).'   max(ball_position.').'])];
     bounds = [min(state(:,1:3)-3*Lg_); max(state(:,1:3)+3*Lg_)];
-%     bounds = [min([state(:,1:3)-3*Lg_;ball_position.']); max([state(:,1:3)+3*Lg_;ball_position.'])];
     axis(bounds(:));
     xlabel('x');
     ylabel('y');

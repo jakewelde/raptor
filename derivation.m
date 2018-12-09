@@ -234,105 +234,19 @@ disp('Computing differential flatness relationships')
 syms Om_des1 Om_des2
 syms Om_d_des1 Om_d_des2
 
-[J1, j1] = equationsToMatrix([Om(1); Om(2)] == [Om_des1; Om_des2],[th1d; th2d]);
-compute_thd_from_Om12_all = matlabFunction(inv(J1)*j1);
+[L1, l1] = equationsToMatrix([Om(1); Om(2)] == [Om_des1; Om_des2],[th1d; th2d]);
+compute_thd_from_Om12_all = matlabFunction(inv(L1)*l1);
 
-[J2, j2] = equationsToMatrix([Om_d(1); Om_d(2)] == [Om_d_des1;Om_d_des2],[th1dd;th2dd]);
-compute_thdd_from_Om_d12_all = matlabFunction(inv(J2)*j2);
+[L2, l2] = equationsToMatrix([Om_d(1); Om_d(2)] == [Om_d_des1;Om_d_des2],[th1dd;th2dd]);
+compute_thdd_from_Om_d12_all = matlabFunction(inv(L2)*l2);
 
-
-
-% 
-% % Om_d_des = F \ d
-% 
-% xs_dd_des = sym('x_dd_des',[3 1]);
-% xs_ddd_des = sym('x_ddd_des',[3 1]);
-% xs_dddd_des = sym('x_dddd_des',[3 1]);
-% 
-% 
-% thrust    = (Rq*e3).' * (mg+mq) * (xs_dd_des + g*e3);
-% thrust_d  = (Rq*e3).' * (mg+mq) * xs_ddd_des;
-% thrust_dd = (Rq*e3).' * (mg+mq) * xs_dddd_des - thrust*e3.'*hat(Om_des)^2*e3;
-% 
-% dynamics_thrust_constraint = ...
-%      -(mg+mq) * xs_dddd_des + ...
-%        thrust * Rq * ( hat(Om_d) + hat(Om)^2 ) * e3 + ...
-%      thrust_d * 2 * Rq * hat(Om) * e3  + ...
-%     thrust_dd * Rq * e3; % == 0
-% 
-% 
-% 
-% 
-% 
-% thrust_vectoring_constraints = [
-%     dynamics_thrust_constraint(1);
-%     dynamics_thrust_constraint(2);
-% ];
-% [F,d] = equationsToMatrix(thrust_vectoring_constraints == 0,[Om_d(1); Om_d(2)])
-% 
-
-
-
-% 
-% F = simplify(jacobian(thrust_vectoring_constraints,Om_d));
-% d = -simplify(expand(thrust_vectoring_constraints - F * Om_d));
-% 
-% compute_F_all = matlabFunction(F);
-% compute_d_all = matlabFunction(d);
-% 
-% 
-% quad_velocity_constraints = [
-%     [e1.'; e2.'] * Om - 1 / (norm(x_dd_des+g*e3)) * [-(Rq*e2).'; (Rq*e1).']*x_ddd_des; % == 0 
-% ];
-% % 
-% % % L Om = o
-% % 
-% L = simplify(jacobian(quad_velocity_constraints,Om));
-% o = -simplify(expand(quad_velocity_constraints - L * Om));
-% 
-% compute_L_all = matlabFunction(L);
-% compute_o_all = matlabFunction(o);
-
-%% Euler Angle planning
-
-% utilities for planning trajectories on SO(3) using Euler angles.
-
-% trajectory_planning;
-
-% order = 8;
-% syms t_f
-% C_R = sym('C_R',[order 1]);
-% C_S = sym('C_S',[order 1]);
-% C_W = sym('C_W',[order 1]);
-% syms t 
-% 
-% roll_derivatives = compute_derivatives(C_R,t,t_f);
-% swing_derivatives = compute_derivatives(C_S,t,t_f);
-% wrist_derivatives = compute_derivatives(C_W,t,t_f);
-% 
-% Rg_des = axisangle(e2,roll_derivatives(1))*axisangle(e2,swing_derivatives(1))*axisangle(e1,wrist_derivatives(1));
-% 
-% w_d_des = diff(w_des,time);
-% w_dd_des = diff(w_d_des,time);
-% w_ddd_des = diff(w_dd_des,time);
-% 
-% desired_orientation = matlabFunction(Rg_des);
-% angular_derivatives = matlabFunction([
-%        w_des.';
-%      w_d_des.';
-%     w_dd_des.';
-%    w_ddd_des.';
-% ]);
-% 
-% compute_Rg_des = @(C_R, C_S, C_W, t, t_f) desired_orientation(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
-% compute_angulars_des = @(C_R, C_S, C_W, t, t_f) angular_derivatives(C_R(1),C_R(2),C_R(3),C_R(4),C_R(5),C_R(6),C_R(7),C_R(8),C_S(1),C_S(2),C_S(3),C_S(4),C_S(5),C_S(6),C_S(7),C_S(8),C_W(1),C_W(2),C_W(3),C_W(4),C_W(5),C_W(6),C_W(7),C_W(8),t_f,t);
-
+%% Euler angle planning
 
 trajectory_planning;
 
 syms alpha(t) beta(t) gamma(t)
 
-Rg_des = axisangle(e1,alpha(t))*axisangle(e2,beta(t))*axisangle(e1,gamma(t));
+Rg_des = axisangle(e1,alpha(t))*axisangle(e2,beta(t))*axisangle(e3,gamma(t));
 w_des = unhat(Rg_des.' * diff(Rg_des,t));
 w_d_des = diff(w_des,t);
 w_dd_des = diff(w_d_des,t);
@@ -416,3 +330,7 @@ compute_a_state = @(Rg,w,th1,th2,th1d,th2d) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jq
 compute_thd_from_Om12_state = @(Rg,w,th1,th2,Om_des1,Om_des2) compute_thd_from_Om12_all(Om_des1,Om_des2,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,w(1),w(2),w(3));
 compute_thdd_from_Om_d12_state = @(Rg,w,w_d,th1,th2,th1d,th2d,Om_d_des1,Om_d_des2) compute_thdd_from_Om_d12_all(Om_d_des1,Om_d_des2,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,th1d,th2d,w(1),w(2),w(3),w_d(1),w_d(2),w_d(3));
 
+
+%% Optimization
+
+design_optimizer;

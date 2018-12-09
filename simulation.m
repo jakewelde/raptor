@@ -14,21 +14,21 @@ x0 = vector_from_state(...
 );
 
 %% Configure Simulation Parameters
-segment_dt = .0001;
+segment_dt = .001;
 total_dt = 1;
 n = floor(total_dt/segment_dt);
-state = zeros(n,size(x0,1));
-state_des = zeros(size(state));
-state(1,:) = x0;
-current_state = x0;
-
-us = zeros(n,6);
-[xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(x0);
-
 
 %% Ball trajectory
 
-z0 = [-.5; 0; -9; .5; -.7; 13];
+% z0 = [-2.1; 1.8; -5.3; 2; -2; g_];
+% z0 = [-1.5; 3.9; -4.7; 2; -2; g_];
+
+% z0 = [-.5; .9; -4.7; 1; -1; g_];
+
+% z0 = [-.5; .9; -4.7; 3; -3; g_];
+
+z0 = [-4; 0; -4.5; 5; 0; g_];
+
 
 ball_position = zeros(3,n);
 ball_velocity = zeros(3,n);
@@ -47,30 +47,45 @@ end
 
 %% Plan Trajectory
 
-% trajectory.x = find_coefficients_intermediate([0;0;0;0],[z_apex(1);z_d_apex(1);0;0],t_apex,total_dt);
-% trajectory.y = find_coefficients_intermediate([0;0;0;0],[z_apex(2);z_d_apex(2);0;0],t_apex,total_dt);
-% trajectory.z = find_coefficients_intermediate([0;0;0;0],[z_apex(3);z_d_apex(3);0;0],t_apex,total_dt);
+trajectory.x = find_coefficients([0;0;0;0],[z_apex(1);z_d_apex(1)/2;0;0],total_dt);
+trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2)/2;0;0],total_dt);
+trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3)/2;0;0],total_dt);
+trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
+trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt);
+trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 
-trajectory.x = find_coefficients([0;0;0;0],[.3;0;0;0],total_dt);
-trajectory.y = find_coefficients([0;0;0;0],[.2;0;0;0],total_dt);
-trajectory.z = find_coefficients([0;0;0;0],[.8;0;0;0],total_dt);
-trajectory.a = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt); 
-trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2+pi/4;0;0;0],total_dt);
-trajectory.g = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt);
+% aggressive example
+% trajectory.x = find_coefficients([0;0;0;0],[.3;0;0;0],total_dt);
+% trajectory.y = find_coefficients([0;0;0;0],[.2;0;0;0],total_dt);
+% trajectory.z = find_coefficients([0;0;0;0],[.8;0;0;0],total_dt);
+% trajectory.a = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt); 
+% trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2+pi/4;0;0;0],total_dt);
+% trajectory.g = find_coefficients([0;0;0;0],[pi/4;0;0;0],total_dt);
 
-trajectory.x = find_coefficients([0;0;0;0],[.03;0;0;0],total_dt);
-trajectory.y = find_coefficients([0;0;0;0],[.05;0;0;0],total_dt);
-trajectory.z = find_coefficients([0;0;0;0],[.4;0;0;0],total_dt);
-trajectory.a = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt); 
-trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2+pi/4;0;0;0],total_dt);
-trajectory.g = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
+% conservative example
+% trajectory.x = find_coefficients([0;0;0;0],[.03;0;0;0],total_dt);
+% trajectory.y = find_coefficients([0;0;0;0],[.05;0;0;0],total_dt);
+% trajectory.z = find_coefficients([0;0;0;0],[.4;0;0;0],total_dt);
+% trajectory.a = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt); 
+% trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2+pi/4;0;0;0],total_dt);
+% trajectory.g = find_coefficients([0;0;0;0],[pi/10;0;0;0],total_dt);
 
 
 
-stacked = [
+C0 = [
     trajectory.x; trajectory.y; trajectory.z;
     trajectory.a; trajectory.b; trajectory.g;
 ];
+
+delta_t = .1;
+[stacked, minval, retcode] = trajectory_optimization(z0,C0,delta_t);
+minval
+retcode
+
+show_trajectory;
+pause
+
+
 % 
 % figure(3)
 % clf;
@@ -85,6 +100,17 @@ stacked = [
 %     title(names{coord});
 % end
 % drawnow;
+
+%% Tracking
+
+state = zeros(n,size(x0,1));
+state_des = zeros(size(state));
+state(1,:) = x0;
+current_state = x0;
+
+us = zeros(n,6);
+[xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(x0);
+
 
 %% Dynamic Simulation
 
@@ -132,32 +158,3 @@ end
 %% Visualization
 
 plot_sim_results
-
-% figure(1);
-% plot(state(:,1:3))
-% legend('x','y','z')
-% 
-% x = zeros(n,3);
-% y = zeros(n,3);
-% z = zeros(n,3);
-% for i=1:n
-%    [xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(state(i,:).');
-% %    Rg
-% %    th1
-% %    th2
-%    Rq = compute_Rq_state(Rg,th1,th2);
-%    x(i,:) = (Rq*e1).';
-%    y(i,:) = (Rq*e2).';
-%    z(i,:) = (Rq*e3).';
-% end
-% 
-% figure(2);
-% clf;
-% hold on;
-% zo = zeros(1,size(step,2));
-% step = 1:10:n;
-% quiver3(state(step,1),state(step,2),state(step,3),x(step,1),x(step,2),x(step,3),'AutoScale','Off');
-% quiver3(state(step,1),state(step,2),state(step,3),y(step,1),y(step,2),y(step,3),'AutoScale','Off');
-% quiver3(state(step,1),state(step,2),state(step,3),z(step,1),z(step,2),z(step,3),'AutoScale','Off');
-% hold off;
-% axis equal

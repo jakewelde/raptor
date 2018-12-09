@@ -1,18 +1,35 @@
 function u = feedback_linearization(xs_des, xe_des, Rg_des, th1_des, th2_des, xs_d_des, xe_d_des, w_des, th1_d_des, th2_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state)
 
     global e3
-
     global mg_ mq_ g_
     global compute_M_state compute_B_state compute_a_state
     global compute_Rq_state;
-    global hat unhat
-
-    % Feedback Linearization
-
-    [xs, Rg, th1, th2, xs_d, w, th1_d, th2_d] = state_from_vector(state);
-
-    Rq_des = compute_Rq_state(Rg,th1,th2);
+    global unhat
     
+    if(exist('state','var'))
+        [xs, Rg, th1, th2, xs_d, w, th1_d, th2_d] = state_from_vector(state);
+        Rq_des = compute_Rq_state(Rg,th1,th2);
+        xe = [
+          (Rq_des*e3).'*(xs - xs_des);
+          (Rq_des*e3).'*(xs_d - xs_d_des);
+          1/2*unhat(Rg_des.'*Rg - Rg.'*Rg_des); % gripper rotation error   
+          w - Rg.'*Rg_des*w_des;
+          th1-th1_des;
+          th1_d-th1_d_des;
+          th2-th2_des;
+          th2_d-th2_d_des;
+        ];
+    else
+        xe = zeros(12,1);
+        Rg = Rg_des;
+        th1 = th1_des;
+        th2 = th2_des;
+        th1_d = th1_d_des;
+        th2_d = th2_d_des;
+        w = w_des;
+        Rq_des = compute_Rq_state(Rg,th1,th2);
+    end
+        
     acc_nominal = [(Rq_des*e3).'*xs_dd_des; w_d_des; th1_dd_des; th2_dd_des];
 
     % Compute numerical function that represents the evolution of the system's
@@ -62,33 +79,15 @@ function u = feedback_linearization(xs_des, xe_des, Rg_des, th1_des, th2_des, xs
     % 
     % M x_nom'' = B u_ff + a(x)
     % u_ff = inv(B) * (-a(x) + M x_nom'')
+
     
-%     if(nargin < 7)
-%         xe = zeros(12,1); 
-%     else
-
-
-
-
-
-    xe = [
-      (Rq_des*e3).'*(xs - xs_des);
-      (Rq_des*e3).'*(xs_d - xs_d_des);
-      1/2*unhat(Rg_des.'*Rg - Rg.'*Rg_des); % gripper rotation error   
-      w - Rg.'*Rg_des*w_des;
-      th1-th1_des;
-      th1_d-th1_d_des;
-      th2-th2_des;
-      th2_d-th2_d_des;
-    ];
-
-    Kx = 1e4;
+    Kx = 1e5;
     Kv = 2*sqrt(Kx);
 
-    Krg = 5e5;
+    Krg = 1e5;
     Kw = 2*sqrt(Krg);
 
-    Kp = 5e5;
+    Kp = 1e5;
     Kd = 2*sqrt(Kp);
     K = -[
         Kx  Kv  0   0   0   0   0   0   0   0   0   0;
@@ -99,9 +98,15 @@ function u = feedback_linearization(xs_des, xe_des, Rg_des, th1_des, th2_des, xs
         0   0   0   0   0   0   0   0   0   0   Kp  Kd;
     ];
 
-    acc_des = acc_nominal + K*xe;
-
-    u = B \ (- a + M*(acc_des));
-
+    u_ff = B \ (- a + M*(acc_nominal));
+    u_fb = B \ (M*K*xe);
+%     u_fb
+    
+    u = u_ff + u_fb;
+    
+%     if(exist('state','var')) % real feedback scenario, not nominal
+%         saturation = [g_*(mq_+mg_)*2 10 10 1 1 1].';
+%         u = max(min(u,saturation),-saturation);
+%     end
     
 end

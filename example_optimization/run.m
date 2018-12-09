@@ -8,4 +8,4 @@ opt.fc_tol = [1e-8, 1e-8];
 opt.xtol_rel = 1e-4;
 opt.verbose = 1;
 
-[xopt, fmin, retcode] = nlopt_optimize(opt, [1.234 5.678])
+[argmin, min, retcode] = nlopt_optimize(opt, [10.234 5000.678])
