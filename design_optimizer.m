@@ -16,7 +16,7 @@ rdddd = diff(rddd,time);
 
 
 % integrand = J0*(r.'*r) + J1*(rd.'*rd);
-Q0 = diag([100 100 100 1 1 1]);
+Q0 = diag([10000 10000 10000 .1 .1 .1]);
 Q1 = diag([100 100 100 1 1 1]);
 J0 = 1;
 J1 = .001;

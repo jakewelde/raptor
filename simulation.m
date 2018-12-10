@@ -13,7 +13,7 @@ n = floor(total_dt/segment_dt);
 % z0 = [-.5; .9; -4.7; 3; -3; g_];
 
 v0 = 1;
-z0 = [.75-v0; 0; -g_/2; v0; 0; g_]; 
+z0 = [.75-v0; .5; -g_/2; v0; 0; g_]; 
 
 
 ball_position = zeros(3,n);
