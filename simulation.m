@@ -12,8 +12,8 @@ n = floor(total_dt/segment_dt);
 
 % z0 = [-.5; .9; -4.7; 3; -3; g_];
 
-v0 = 1;
-z0 = [.75-v0; .5; -g_/2; v0; 0; g_]; 
+v0 = 2;
+z0 = [.2-v0; 0; -g_/2-Ls_; v0; 0; g_]; 
 
 
 ball_position = zeros(3,n);
@@ -33,9 +33,9 @@ end
 
 %% Plan Trajectory
 
-trajectory.x = find_coefficients([0;0;0;0],[z_apex(1);z_d_apex(1)/2;0;0],total_dt);
-trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2)/2;0;0],total_dt);
-trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3)/2;0;0],total_dt);
+trajectory.x = find_coefficients([0;0;0;0],[z_apex(1);0;0;0],total_dt);
+trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);0;0;0],total_dt);
+trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);0;0;0],total_dt);
 trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); % wrist pronation a: + pi, - pi
 trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt); % swing      b: 0, pi
 trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); % yaw               -2*pi,2*pi

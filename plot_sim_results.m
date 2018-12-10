@@ -141,9 +141,9 @@ for range=[1:step:n n]
     cla;
     hold on;
     view(az,el);
-    d_trail = 70;
+    d_trail = 10;
     pts = [1:d_trail:range range];
-    plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.','MarkerSize',15,'color',[.9 .2 .6])
+    plot3(xe(pts,1),xe(pts,2),xe(pts,3),'.','MarkerSize',5,'color',[.9 .2 .6])
     plot3(xe_rec(1,:),xe_rec(2,:),xe_rec(3,:),'color',[.9 .2 .6])
     plot3(xs_rec(1,:),xs_rec(2,:),xs_rec(3,:),'color',[.9 .2 .6])
 

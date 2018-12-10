@@ -279,11 +279,11 @@ symbol_derivatives = [
 
 substituted_block = simplify(subs(angular_block,sym_derivatives,symbol_derivatives));
 
-global compute_angular_derivatives compute_Rg_angles compute_com_acceleration
+global compute_angular_derivatives compute_Rg_angles compute_com_acceleration compute_w_angles
 compute_angular_derivatives = matlabFunction(substituted_block);
 Rg_des = simplify(subs(Rg_des,sym_derivatives,symbol_derivatives));
 compute_Rg_angles = matlabFunction(Rg_des);
-
+compute_w_angles = matlabFunction(substituted_block(1,:).');
 
 % for inequality constraints
 

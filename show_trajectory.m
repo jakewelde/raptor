@@ -12,6 +12,8 @@ positions = zeros(6,size(time_range,2));
 states = zeros(size(time_range,2),22);
 us = zeros(size(time_range,2),6);
 
+xe = zeros(3,size(time_range,2));
+
 for i=1:size(time_range,2)
     positions(:,i) = [
         [1 0 0 0 0]*compute_derivatives(cx,time_range(i),1);
@@ -25,12 +27,21 @@ for i=1:size(time_range,2)
     [u, state_des] = compute_control(stacked,time_range(i),total_dt);
     states(i,:) = state_des.';
     us(i,:) = u.';
+    [xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(state_des);
+    xe(:,i) = xs + Ls_*Rg*e1 ;
+
+    
+    ...%     xs_d_des  + Ls_*Rg_des*wh*e1 = xe_d_des;
+
+    
 end
 figure(3);
 clf;
 subplot(3,2,[1 3 5]);
 hold on;
 plot3(positions(1,:),positions(2,:),positions(3,:))
+
+plot3(xe(1,:),xe(2,:),xe(3,:))
 
 plot3(states(:,1),states(:,2),states(:,3))
 
@@ -51,6 +62,8 @@ vec = z_d_apex/norm(z_d_apex);
 quiver3(z_apex(1),z_apex(2),z_apex(3),vec(1),vec(2),vec(3));
 hold off;
 axis equal;
+bounds = [min(states(:,1:3)-2*Lg_); max(states(:,1:3)+2*Lg_)];
+axis(bounds(:));
 
 xlabel('x'); ylabel('y'); zlabel('z');
 title(retcode)
