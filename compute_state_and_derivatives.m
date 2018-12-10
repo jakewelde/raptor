@@ -20,12 +20,14 @@ function [xe_des, xe_d_des, xs_dd_des, w_d_des, th1_dd_des, th2_dd_des, state_de
     
     angular = compute_angular_des(trajectory.a,trajectory.b,trajectory.g,t,total_dt);
     Rg_des = compute_Rg_des(trajectory.a,trajectory.b,trajectory.g,t,total_dt);
-
+    
     w_des     = angular(1,:).';
     w_d_des   = angular(2,:).';
     w_dd_des  = angular(3,:).';
     w_ddd_des = angular(4,:).';
-
+    
+%     disp(angular.')
+    
     flat_state = zeros(5,3);
 
     flat_state(:,1) = compute_derivatives(trajectory.x,t,total_dt);

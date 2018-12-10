@@ -5,6 +5,7 @@ ca = stacked(25:32);
 cb = stacked(33:40);
 cg = stacked(41:48);
 
+delta_t = .1;
 time_range = 0:.01:1+delta_t;
 positions = zeros(6,size(time_range,2));
 

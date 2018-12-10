@@ -246,11 +246,13 @@ trajectory_planning;
 
 syms alpha(t) beta(t) gamma(t)
 
-Rg_des = axisangle(e1,alpha(t))*axisangle(e2,beta(t))*axisangle(e3,gamma(t));
-w_des = unhat(Rg_des.' * diff(Rg_des,t));
-w_d_des = diff(w_des,t);
-w_dd_des = diff(w_d_des,t);
-w_ddd_des = diff(w_dd_des,t);
+% Rg_des = axisangle(e1,alpha(t))*axisangle(e2,beta(t))*axisangle(e3,gamma(t));
+
+Rg_des = axisangle(e3,gamma(t))*axisangle(e2,beta(t))*axisangle(e1,alpha(t));
+w_des = simplify(expand(unhat(Rg_des.' * diff(Rg_des,t))));
+w_d_des = simplify(expand(diff(w_des,t)));
+w_dd_des = simplify(expand(diff(w_d_des,t)));
+w_ddd_des = simplify(expand(diff(w_dd_des,t)));
 
 angular_block = [
        w_des.';
@@ -277,10 +279,20 @@ symbol_derivatives = [
 
 substituted_block = simplify(subs(angular_block,sym_derivatives,symbol_derivatives));
 
-global compute_angular_derivatives compute_Rg_angles
+global compute_angular_derivatives compute_Rg_angles compute_com_acceleration
 compute_angular_derivatives = matlabFunction(substituted_block);
-compute_Rg_angles = matlabFunction(simplify(subs(Rg_des,sym_derivatives,symbol_derivatives)));
+Rg_des = simplify(subs(Rg_des,sym_derivatives,symbol_derivatives));
+compute_Rg_angles = matlabFunction(Rg_des);
 
+
+% for inequality constraints
+
+xe_dd_des = sym('xe_dd_des',[3 1]);
+% Rg_des = 
+
+xs_dd_des = simplify(expand(xe_dd_des-Ls*Rg_des*(hat(substituted_block(2,:))+hat(substituted_block(1,:))^2)*e1));
+
+compute_com_acceleration = matlabFunction(xs_dd_des);
 
 %% Numerical Physical Parameters
 
@@ -288,6 +300,7 @@ global Jqx_ Jqy_ Jqz_ Jgx_ Jgy_ Jgz_
 global Jq_ Jg_
 global mq_ mg_ g_
 global Lg_ Le_ Ls_
+global saturation_
 
 % Quad Inertia
 Jqx_ = .005; % [kg*m^2]
@@ -311,6 +324,8 @@ Ls_ = (-(mg_*Lg_)/(mg_+mq_)+Le_);
 Jq_ = diag([Jqx_ Jqy_ Jqz_]); % quad inertia
 Jg_ = diag([Jgx_ Jgy_ Jgz_]); % gripper inertia
 
+saturation_ = [g_*(mq_+mg_)*2 3 3 3 1 1].';
+
 %% Function Parameter Substitution
 
 % Substitute physical parameters of the robot into the functions we are
@@ -329,6 +344,8 @@ compute_a_state = @(Rg,w,th1,th2,th1d,th2d) compute_a_all(Jgx_,Jgy_,Jgz_,Jqx_,Jq
 % differential flatness
 compute_thd_from_Om12_state = @(Rg,w,th1,th2,Om_des1,Om_des2) compute_thd_from_Om12_all(Om_des1,Om_des2,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,w(1),w(2),w(3));
 compute_thdd_from_Om_d12_state = @(Rg,w,w_d,th1,th2,th1d,th2d,Om_d_des1,Om_d_des2) compute_thdd_from_Om_d12_all(Om_d_des1,Om_d_des2,Rg(1,1),Rg(1,2),Rg(1,3),Rg(2,1),Rg(2,2),Rg(2,3),Rg(3,1),Rg(3,2),Rg(3,3),th1,th2,th1d,th2d,w(1),w(2),w(3),w_d(1),w_d(2),w_d(3));
+
+% inequality constraints
 
 
 %% Optimization

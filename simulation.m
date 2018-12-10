@@ -1,18 +1,3 @@
-%% Set Initial Conditions
-
-% Rq0 = axisangle(e3,.1); % hover 
-% Rg0 = axisangle(e3,.1)*axisangle(e2,pi/2); % arm downwards
-
-Rg0 = axisangle(e2,pi/2);
-
-th1 = 0;
-th2 = -pi/2;
-
-x0 = vector_from_state(...
-    [0;0;Ls_],Rg0,th1,th2,...
-    [0;0;0],[0;0;0],0,0 ...
-);
-
 %% Configure Simulation Parameters
 segment_dt = .001;
 total_dt = 1;
@@ -27,7 +12,8 @@ n = floor(total_dt/segment_dt);
 
 % z0 = [-.5; .9; -4.7; 3; -3; g_];
 
-z0 = [-4; 0; -4.5; 5; 0; g_];
+v0 = 1;
+z0 = [.75-v0; 0; -g_/2; v0; 0; g_]; 
 
 
 ball_position = zeros(3,n);
@@ -50,9 +36,9 @@ end
 trajectory.x = find_coefficients([0;0;0;0],[z_apex(1);z_d_apex(1)/2;0;0],total_dt);
 trajectory.y = find_coefficients([0;0;0;0],[z_apex(2);z_d_apex(2)/2;0;0],total_dt);
 trajectory.z = find_coefficients([0;0;0;0],[z_apex(3);z_d_apex(3)/2;0;0],total_dt);
-trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); 
-trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt);
-trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
+trajectory.a = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); % wrist pronation a: + pi, - pi
+trajectory.b = find_coefficients([pi/2;0;0;0],[pi/2;0;0;0],total_dt); % swing      b: 0, pi
+trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt); % yaw               -2*pi,2*pi
 
 % aggressive example
 % trajectory.x = find_coefficients([0;0;0;0],[.3;0;0;0],total_dt);
@@ -72,13 +58,12 @@ trajectory.g = find_coefficients([0;0;0;0],[0;0;0;0],total_dt);
 
 
 
-C0 = [
+stacked = [
     trajectory.x; trajectory.y; trajectory.z;
     trajectory.a; trajectory.b; trajectory.g;
 ];
 
-delta_t = .1;
-[stacked, minval, retcode] = trajectory_optimization(z0,C0,delta_t);
+[stacked, minval, retcode] = trajectory_optimization(z0,stacked);
 minval
 retcode
 
@@ -103,13 +88,15 @@ pause
 
 %% Tracking
 
-state = zeros(n,size(x0,1));
+[~,current_state] = compute_control(stacked,0,total_dt);
+
+state = zeros(n,size(current_state,1));
 state_des = zeros(size(state));
-state(1,:) = x0;
-current_state = x0;
+
+state(1,:) = current_state;
 
 us = zeros(n,6);
-[xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(x0);
+[xs, Rg, th1, th2, xs_d, w, th1d, th2d] = state_from_vector(current_state);
 
 
 %% Dynamic Simulation

@@ -90,7 +90,7 @@ cla;
 hold on;
 plot(ts,xe(:,1),'r',ts,xe(:,2),'g',ts,xe(:,3),'b');
 hz = [0 total_dt];
-plot(hz,[z_apex z_apex],'-.k')
+plot(hz,[z_apex z_apex],'-.','color',[.4 .4 .4])
 hold off;
 title('end effector position in world');
 ylabel('position [m]')
@@ -99,7 +99,7 @@ subplot(4,2,4);
 cla;
 hold on;
 plot(ts,ve(:,1),'r',ts,ve(:,2),'g',ts,ve(:,3),'b');
-plot(hz,[z_d_apex z_d_apex],'-.k')
+plot(hz,[z_d_apex z_d_apex],'-.','color',[.4 .4 .4])
 hold off;
 title('end effector velocity in world');
 ylabel('velocity [m/s]')
@@ -134,7 +134,7 @@ if(exist('az') && exist('el'))
     view(az,el)
 end
 
-step = 50;
+step = 20;
 for range=[1:step:n n]
 
     [az,el]=view;

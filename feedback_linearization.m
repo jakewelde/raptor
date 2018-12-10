@@ -100,13 +100,12 @@ function u = feedback_linearization(xs_des, xe_des, Rg_des, th1_des, th2_des, xs
 
     u_ff = B \ (- a + M*(acc_nominal));
     u_fb = B \ (M*K*xe);
-%     u_fb
     
     u = u_ff + u_fb;
     
 %     if(exist('state','var')) % real feedback scenario, not nominal
-%         saturation = [g_*(mq_+mg_)*2 10 10 1 1 1].';
-%         u = max(min(u,saturation),-saturation);
+%         global saturation_
+%         u = max(min(u,saturation_),-saturation_);
 %     end
     
 end
